@@ -33,8 +33,9 @@ void Codec_init(Codec* codec, Codec_HeaderImpl* header, Codec_DataImpl* data, Co
 
 void Codec_decode(Codec* codec, IStream* stream) {
     Codec_Result result;
+    IStream_setLimit(stream, STREAM_NO_LIMIT);
     while ((result = CODEC_DECODE_FIELDS[(uint8_t) codec->State](codec, stream)) == Codec_InProcess) {
-        
+        IStream_setLimit(stream, STREAM_NO_LIMIT);
     }
 }
 
@@ -107,8 +108,6 @@ static Codec_Result Codec_decodeHeader(Codec* codec, IStream* stream) {
                 IStream_setLimit(stream, STREAM_NO_LIMIT);
                 if ((index = codec->HeaderImpl->find(codec, stream)) < 0) {
                     IStream_ignore(stream, len);
-                    // move to state Data
-                    codec->State = Codec_State_Data;
                     return Codec_ProcessDone;
                 }
                 else {
@@ -119,6 +118,7 @@ static Codec_Result Codec_decodeHeader(Codec* codec, IStream* stream) {
             do {
                 IStream_setLimit(stream, headerLen);
                 if (codec->HeaderImpl->parse(codec, codec->Frame, stream) == Codec_Ok) {
+                    codec->State = Codec_State_Data;
                     return Codec_InProcess;
                 }
                 IStream_ignore(stream, 1);
