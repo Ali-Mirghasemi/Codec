@@ -12,7 +12,7 @@
 #ifndef _CODEC_H_
 #define _CODEC_H_
 
-#if __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -23,72 +23,80 @@ extern "C" {
 /*                            Configuration                             */
 /************************************************************************/
 
+#define CODEC_ARGS                          1
+
+#define CODEC_LAYER_PADDING                 1
+
+#if CODEC_LAYER_PADDING
+    #define CODEC_LAYER_PADDING_IGNORE      0
+    #define CODEC_LAYER_PADDING_VALUE       0xFF
+
+    #define CODEC_LAYER_PADDING_MODE        CODEC_LAYER_PADDING_IGNORE
+
+#endif
+
+#define CODEC_ENCODE_ERROR                  1
+
+#define CODEC_DECODE_ERROR                  1
+
 typedef void Codec_Frame;
 
+typedef uint32_t Codec_Error;
+
+typedef uint16_t Codec_LayerIndex;
+
 /************************************************************************/
+
+#define CODEC_OK                ((Codec_Error) 0)
+
+#define CODEC_LAYER_NULL        ((Codec_LayerImpl*) 0)
 
 struct __Codec;
 typedef struct __Codec Codec;
 
-typedef enum {
-    Codec_Ok                = 0x00,
-    Codec_Error             = 0x01,
-    Codec_NoHeaderImpl      = 0x02,
-    Codec_NoDataImpl        = 0x03,
-    Codec_NoFooterImpl      = 0x04,
-    Codec_NoFrame           = 0x05,
-    Codec_InProcess         = 0x10,
-    Codec_ProcessDone       = 0x11,
-} Codec_Result;
+struct __Codec_LayerImpl;
+typedef struct __Codec_LayerImpl Codec_LayerImpl;
 
+typedef Codec_Error (*Codec_ParseFn)(Codec* codec, IStream* stream, Codec_Frame* frame);
+typedef Codec_Error (*Codec_WriteFn)(Codec* codec, OStream* stream, Codec_Frame* frame);
 typedef Stream_LenType (*Codec_GetLenFn)(Codec* codec, Codec_Frame* frame);
-typedef Codec_Result (*Codec_ParseFn)(Codec* codec, Codec_Frame* frame, IStream* stream);
-typedef Codec_Result (*Codec_WriteFn)(Codec* codec, Codec_Frame* frame, OStream* stream);
-typedef Stream_LenType (*Codec_FindFn)(Codec* codec, IStream* stream);
+typedef Codec_LayerImpl* (*Codec_GetUpperLayerFn)(Codec* codec, Codec_Frame* frame);
 typedef void (*Codec_OnFrameFn)(Codec* codec, Codec_Frame* frame);
+typedef void (*Codec_OnErrorFn)(Codec* codec, Codec_Frame* frame, Codec_LayerImpl* layer, Codec_Error error);
 
-typedef enum {
-    Codec_State_Header      = 0,
-    Codec_State_Data        = 1,
-    Codec_State_Footer      = 2,
-} Codec_State;
-
-typedef struct {
-    Codec_GetLenFn          getHeaderLen;
-    Codec_GetLenFn          getPacketSize;
-    Codec_FindFn            find;
+struct __Codec_LayerImpl {
     Codec_ParseFn           parse;
     Codec_WriteFn           write;
-} Codec_HeaderImpl;
-
-typedef struct {
-    Codec_ParseFn           parse;
-    Codec_WriteFn           write;
-} Codec_DataImpl;
-
-typedef struct {
-    Codec_GetLenFn          getFooterLen;
-    Codec_ParseFn           parse;
-    Codec_WriteFn           write;
-} Codec_FooterImpl;
-
-struct __Codec {
-    Codec_HeaderImpl*       HeaderImpl;
-    Codec_DataImpl*         DataImpl;
-    Codec_FooterImpl*       FooterImpl;
-    Codec_Frame*            Frame;
-    Codec_OnFrameFn         onFrame;
-    Codec_State             State;
+    Codec_GetLenFn          getLayerLen;
+    Codec_GetUpperLayerFn   getUpperLayer;
 };
 
-void Codec_init(Codec* codec, Codec_HeaderImpl* header, Codec_DataImpl* data, Codec_FooterImpl* footer, Codec_Frame* frame);
+struct __Codec {
+#if CODEC_ARGS
+    void*                   Args;
+#endif
+    Codec_LayerImpl*        BaseLayer;
+    Codec_LayerImpl*        CurrentLayer;
+    Codec_Frame*            Frame;
+    Codec_OnFrameFn         onFrame;
+    Codec_OnErrorFn         onError;
+};
+
+void Codec_init(Codec* codec, Codec_LayerImpl* baseLayer, Codec_Frame* frame);
+void Codec_onFrame(Codec* codec, Codec_OnFrameFn fn);
+void Codec_onError(Codec* codec, Codec_OnErrorFn fn);
+
+#if CODEC_ARGS
+    void  Codec_setArgs(Codec* codec, void* args);
+    void* Codec_getArgs(Codec* codec);
+#endif
 
 void Codec_decode(Codec* codec, IStream* stream);
-Codec_Result Codec_encode(Codec* codec, OStream* stream, Codec_Frame* frame);
-Codec_Result Codec_encodeFlush(Codec* codec, OStream* stream, Codec_Frame* frame, uint8_t flushPart);
+Codec_Error Codec_encode(Codec* codec, OStream* stream, Codec_Frame* frame);
+Codec_Error Codec_encodeFlush(Codec* codec, OStream* stream, Codec_Frame* frame);
 
 
-#if __cplusplus
+#ifdef __cplusplus
 };
 #endif
 
