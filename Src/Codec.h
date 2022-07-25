@@ -2,7 +2,7 @@
  * @file Codec.h
  * @author Ali Mirghasemi (ali.mirghasemi1376@gmail.com)
  * @brief this library help you for encode/decode frames, it's based on stream library
- * @version 0.1
+ * @version 0.2
  * @date 2021-09-01
  *
  * @copyright Copyright (c) 2021
@@ -16,12 +16,11 @@
 extern "C" {
 #endif
 
-#include "InputStream.h"
-#include "OutputStream.h"
-
 #define CODEC_VER_MAJOR    0
-#define CODEC_VER_MINOR    1
+#define CODEC_VER_MINOR    2
 #define CODEC_VER_FIX      0
+
+#include <stdint.h>
 
 /************************************************************************/
 /*                            Configuration                             */
@@ -29,29 +28,88 @@ extern "C" {
 /**
  * @brief enable user arguments into codec
  */
-#define CODEC_ARGS                          1
+#define CODEC_ARGS                              1
 /**
- * @brief enable auto padding for fix layer sizes
+ * @brief enable encode feature,
  */
-#define CODEC_LAYER_PADDING                 1
+#define CODEC_ENCODE                            1
 /**
- * @brief select padding mode
+ * @brief enable decode feature,
  */
-#if CODEC_LAYER_PADDING
-    #define CODEC_LAYER_PADDING_IGNORE      0
-    #define CODEC_LAYER_PADDING_VALUE       0xFF
+#define CODEC_DECODE                            1
 
-    #define CODEC_LAYER_PADDING_MODE        CODEC_LAYER_PADDING_IGNORE
+/* Codec Encode Options */
+#if CODEC_ENCODE
+    /**
+     * @brief enable encode on raw buffer
+     */
+    #define CODEC_ENCODE_ON_BUFFER              1
+    /**
+     * @brief enable encode async feature,
+     * this feature allow you to encode on stream with smaller buffer size
+     */
+    #define CODEC_ENCODE_ASYNC                  1
+    /**
+     * @brief enable queue for encode async feature, !*this feature is not working yet*!
+     */
+    #define CODEC_ENCODE_QUEUE                  1
+    /**
+     * @brief enable callback feature for when encode completed
+     */
+    #define CODEC_ENCODE_CALLBACK               1
+    /**
+     * @brief enable encode error callback
+     */
+    #define CODEC_ENCODE_ERROR                  1
+    /**
+     * @brief enable encode padding for keep layer size fixed
+     */
+    #define CODEC_ENCODE_PADDING                1
+    /* Encode Padding Options */
+    #if CODEC_ENCODE_PADDING
+        #define CODEC_ENCODE_PADDING_IGNORE     -1
+        #define CODEC_ENCODE_PADDING_VALUE      0x00
 
-#endif
-/**
- * @brief enable encode error callback
- */
-#define CODEC_ENCODE_ERROR                  1
-/**
- * @brief enable decode error callback
- */
-#define CODEC_DECODE_ERROR                  1
+        #define CODEC_ENCODE_PADDING_MODE       CODEC_LAYER_PADDING_IGNORE
+    #endif // CODEC_ENCODE_PADDING
+#endif // CODEC_ENCODE
+
+/* Codec Decode Options */
+#if CODEC_DECODE
+    /**
+     * @brief enable encode on raw buffer
+     */
+    #define CODEC_DECODE_ON_BUFFER              1
+    /**
+     * @brief enable decode async feature,
+     * this feature allow you to encode on stream with smaller buffer size
+     */
+    #define CODEC_DECODE_ASYNC                  1
+    /**
+     * @brief enable queue for decode async feature, !*this feature is not working yet*!
+     */
+    #define CODEC_DECODE_QUEUE                  1
+    /**
+     * @brief enable sync options for decode
+     */
+    #define CODEC_DECODE_SYNC                   1
+    /**
+     * @brief enable callback feature for when decode completed
+     */
+    #define CODEC_DECODE_CALLBACK               1
+    /**
+     * @brief enable decode error callback
+     */
+    #define CODEC_DECODE_ERROR                  1
+    /**
+     * @brief enable decode padding for keep layer size fixed
+     */
+    #define CODEC_DECODE_PADDING                1
+    /**
+     * @brief if stream has bytes keep decoding until end of stream
+     */
+    #define CODEC_DECODE_CONTINUOUS             0
+#endif // CODEC_DECODE
 /**
  * @brief choose what type use for codec frame, default is void
  */
@@ -66,13 +124,22 @@ typedef uint32_t Codec_Error;
 typedef uint16_t Codec_LayerIndex;
 
 /************************************************************************/
-#if !STREAM_WRITE_LIMIT
-    #error "Codec Library use STREAM_LIMIT_WRITE, you must enable it"
-#endif
+#if CODEC_ENCODE
+    #include "OutputStream.h"
 
-#if !STREAM_READ_LIMIT
-    #error "Codec Library use STREAM_LIMIT_READ, you must enable it"
+#if !OSTREAM_LOCK
+    #error "Codec Library use OSTREAM_LOCK, you must enable it"
 #endif
+#endif // CODEC_ENCODE
+
+#if CODEC_DECODE
+    #include "InputStream.h"
+
+#if !ISTREAM_LOCK
+    #error "Codec Library use ISTREAM_LOCK, you must enable it"
+#endif
+#endif // CODEC_DECODE
+
 
 #define __CODEC_VER_STR(major, minor, fix)     #major "." #minor "." #fix
 #define _CODEC_VER_STR(major, minor, fix)      __CODEC_VER_STR(major, minor, fix)
@@ -98,14 +165,22 @@ struct __Codec;
 typedef struct __Codec Codec;
 struct __Codec_LayerImpl;
 typedef struct __Codec_LayerImpl Codec_LayerImpl;
+struct __Codec_EncodeQueue;
+typedef struct __Codec_EncodeQueue Codec_EncodeQueue;
+struct __Codec_DecodeQueue;
+typedef struct __Codec_DecodeQueue Codec_DecodeQueue;
+#if CODEC_DECODE
 /**
  * @brief this function parse layer from input stream
  */
 typedef Codec_Error (*Codec_ParseFn)(Codec* codec, Codec_Frame* frame, IStream* stream);
+#endif // CODEC_DECODE
+#if CODEC_ENCODE
 /**
  * @brief this function write layer into output stream
  */
 typedef Codec_Error (*Codec_WriteFn)(Codec* codec, Codec_Frame* frame, OStream* stream);
+#endif // CODEC_ENCODE
 /**
  * @brief this function return size of layer in bytes
  */
@@ -115,13 +190,26 @@ typedef Stream_LenType (*Codec_GetLenFn)(Codec* codec, Codec_Frame* frame);
  */
 typedef Codec_LayerImpl* (*Codec_GetUpperLayerFn)(Codec* codec, Codec_Frame* frame);
 /**
- * @brief this function is called when codec decode a frame from stream
+ * @brief this function is called when codec decode/encode a frame completed
  */
 typedef void (*Codec_OnFrameFn)(Codec* codec, Codec_Frame* frame);
 /**
  * @brief this function is called when encode/decode error occurred
  */
 typedef void (*Codec_OnErrorFn)(Codec* codec, Codec_Frame* frame, Codec_LayerImpl* layer, Codec_Error error);
+/**
+ * @brief this function used to sync frame with stream in decoding
+ */
+typedef Stream_LenType (*Codec_SyncFn)(Codec* codec, IStream* stream);
+/**
+ * @brief decode/encode states
+ */
+typedef enum {
+    Codec_Status_Done           = 0,
+    Codec_Status_InProgress     = 1,
+    Codec_Status_Error          = 2,
+    Codec_Status_Pending        = 3,
+} Codec_Status;
 /**
  * @brief codec encode modes
  */
@@ -134,8 +222,12 @@ typedef enum {
  * @brief hold layer implementation
  */
 struct __Codec_LayerImpl {
+#if CODEC_DECODE
     Codec_ParseFn           parse;
+#endif
+#if CODEC_ENCODE
     Codec_WriteFn           write;
+#endif
     Codec_GetLenFn          getLayerLen;
     Codec_GetUpperLayerFn   getUpperLayer;
 };
@@ -147,26 +239,94 @@ struct __Codec {
     void*                   Args;
 #endif
     Codec_LayerImpl*        BaseLayer;
-    Codec_LayerImpl*        CurrentLayer;
-    Codec_Frame*            Frame;
-    Codec_OnFrameFn         onFrame;
-    Codec_OnErrorFn         onError;
+#if CODEC_DECODE
+#if CODEC_DECODE_ASYNC
+    Codec_LayerImpl*        RxLayer;
+    Codec_Frame*            RxFrame;
+#endif
+#if CODEC_DECODE_CALLBACK
+    Codec_OnFrameFn         onDecode;
+#endif
+#if CODEC_DECODE_ERROR
+    Codec_OnErrorFn         onDecodeError;
+#endif
+#if CODEC_DECODE_SYNC
+    Codec_SyncFn            sync;
+#endif
+#endif // CODEC_DECODE
+#if CODEC_ENCODE
+#if CODEC_ENCODE_ASYNC
+    Codec_LayerImpl*        TxLayer;
+    Codec_Frame*            TxFrame;
+    Codec_EncodeMode        EncodeMode;
+#endif
+#if CODEC_ENCODE_CALLBACK
+    Codec_OnFrameFn         onEncode;
+#endif
+#if CODEC_ENCODE_ERROR
+    Codec_OnErrorFn         onEncodeError;
+#endif
+#endif // CODEC_ENCODE
 };
 
-void Codec_init(Codec* codec, Codec_LayerImpl* baseLayer, Codec_Frame* frame);
-void Codec_onFrame(Codec* codec, Codec_OnFrameFn fn);
-
-#if CODEC_ENCODE_ERROR || CODEC_DECODE_ERROR
-    void Codec_onError(Codec* codec, Codec_OnErrorFn fn);
-#endif 
+void Codec_init(Codec* codec, Codec_LayerImpl* baseLayer);
 
 #if CODEC_ARGS
     void  Codec_setArgs(Codec* codec, void* args);
     void* Codec_getArgs(Codec* codec);
 #endif
 
-void Codec_decode(Codec* codec, IStream* stream);
-Codec_Error Codec_encode(Codec* codec, Codec_Frame* frame, OStream* stream, Codec_EncodeMode mode);
+/* Decode Functions */
+#if CODEC_DECODE
+
+#if CODEC_DECODE_CALLBACK
+    void Codec_onDecode(Codec* codec, Codec_OnFrameFn fn);
+#endif
+
+#if CODEC_DECODE_ERROR
+    void Codec_onDecodeError(Codec* codec, Codec_OnErrorFn fn);
+#endif
+
+#if CODEC_DECODE_SYNC
+    void Codec_setDecodeSync(Codec* codec, Codec_SyncFn fn);
+#endif
+
+#if CODEC_DECODE_ON_BUFFER
+    Codec_Status Codec_decodeBuffer(Codec* codec, Codec_Frame* frame, uint8_t* buffer, Stream_LenType size);
+#endif
+
+    Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, IStream* stream);
+
+#if CODEC_DECODE_ASYNC
+    void Codec_beginDecode(Codec* codec, Codec_Frame* frame);
+    void Codec_decode(Codec* codec, IStream* stream);
+#endif
+
+#endif
+
+#if CODEC_ENCODE
+
+#if CODEC_ENCODE_CALLBACK
+    void Codec_onEncode(Codec* codec, Codec_OnFrameFn fn);
+#endif
+
+#if CODEC_ENCODE_ERROR
+    void Codec_onEncodeError(Codec* codec, Codec_OnErrorFn fn);
+#endif
+
+#if CODEC_ENCODE_ON_BUFFER
+    Codec_Status Codec_encodeBuffer(Codec* codec, Codec_Frame* frame, uint8_t* buffer, Stream_LenType size);
+#endif
+
+    Codec_Status Codec_encodeFrame(Codec* codec, Codec_Frame* frame, OStream* stream, Codec_EncodeMode mode);
+
+#if CODEC_ENCODE_ASYNC
+    void Codec_encodeMode(Codec* codec, Codec_EncodeMode mode);
+    void Codec_beginEncode(Codec* codec, Codec_Frame* frame, Codec_EncodeMode mode);
+    void Codec_encode(Codec* codec, OStream* stream);
+#endif
+
+#endif
 
 
 #ifdef __cplusplus
