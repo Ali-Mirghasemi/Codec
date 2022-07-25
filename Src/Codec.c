@@ -131,12 +131,17 @@ Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, IStream* stream
     while (IStream_available(stream) >= layerLen) {
     #if CODEC_DECODE_SYNC
         if (layer == codec->BaseLayer && codec->sync) {
+            Stream_LenType available = IStream_available(stream);
             Stream_LenType len = codec->sync(codec, stream);
             if (len > 0) {
                 IStream_ignore(stream, len);
                 if (IStream_available(stream) < layerLen) {
                     return Codec_Status_Pending;
                 }
+            }
+            else if (len == -1) {
+                IStream_ignore(stream, available);
+                return Codec_Status_Pending;
             }
         }
     #endif
@@ -148,9 +153,12 @@ Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, IStream* stream
                 codec->onDecodeError(codec, frame, layer, error);
             }
         #endif
+            // back to base layer
+            layer = codec->BaseLayer;
             // unlock stream
             IStream_unlockIgnore(stream);
-            return Codec_Status_Error;
+            // ignore one byte
+            IStream_ignore(stream, 1);
         }
         else {
         #if CODEC_DECODE_PADDING
