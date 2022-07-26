@@ -1,5 +1,9 @@
 #include "Codec.h"
 
+#ifndef NULL
+    #define NULL          ((void*) 0)
+#endif
+
 /**
  * @brief initialize codec
  *
@@ -163,7 +167,7 @@ Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, IStream* stream
         else {
         #if CODEC_DECODE_PADDING
             // add padding
-            IStream_ignore(&lock, IStream_available(&lock));
+            IStream_ignore(&lock, IStream_lockLen(stream, &lock));
         #endif
             // unlock stream
             IStream_unlock(stream, &lock);
@@ -243,7 +247,7 @@ void Codec_decode(Codec* codec, IStream* stream) {
         else {
         #if CODEC_LAYER_PADDING
             // add padding
-            IStream_ignore(stream, IStream_available(&lock));
+            IStream_ignore(stream, IStream_lockLen(stream, &lock));
         #endif
             // unlock stream
             IStream_unlock(stream, &lock);
@@ -322,24 +326,24 @@ Codec_Status Codec_encodeFrame(Codec* codec, Codec_Frame* frame, OStream* stream
     OStream lock;
     Codec_Error error;
 
-    layerLen = layer->getLayerLen(codec, frame);
-    while (layer != CODEC_LAYER_NULL && layerLen <= OStream_space(stream)) {
-        OStream_lock(stream, &lock, layer->getLayerLen(codec, frame));
+    while (layer != CODEC_LAYER_NULL &&
+            (layerLen = layer->getLayerLen(codec, frame)) <= OStream_space(stream)) {
+        OStream_lock(stream, &lock, layerLen);
         if((error = layer->write(codec, frame, &lock)) != CODEC_OK) {
         #if CODEC_ENCODE_ERROR
             if (codec->onEncodeError) {
                 codec->onEncodeError(codec, frame, layer, error);
             }
         #endif
-            OStream_unlockIgnore(stream);
+            //OStream_unlockIgnore(stream);
             return Codec_Status_Error;
         }
         else {
         #if CODEC_ENCODE_PADDING
             #if CODEC_ENCODE_PADDING_MODE == CODEC_ENCODE_PADDING_IGNORE
-                OStream_ignore(&lock, OStream_space(&lock));
+                OStream_ignore(&lock, OStream_lockLen(stream, &lock));
             #else
-                OStream_writePadding(&lock, (uint8_t) CODEC_ENCODE_PADDING_VALUE, OStream_space(&lock));
+                OStream_writePadding(&lock, (uint8_t) CODEC_ENCODE_PADDING_VALUE, OStream_lockLen(stream, &lock));
             #endif
         #endif // CODEC_ENCODE_PADDING
             OStream_unlock(stream, &lock);
@@ -347,16 +351,10 @@ Codec_Status Codec_encodeFrame(Codec* codec, Codec_Frame* frame, OStream* stream
                 OStream_flush(stream);
             }
             layer = layer->getUpperLayer(codec, frame);
-            if (layer != CODEC_LAYER_NULL) {
-                layerLen = layer->getLayerLen(codec, frame);
-            }
-            else {
-                status = Codec_Status_Done;
-            }
         }
     }
 
-    if (status == Codec_Status_Done) {
+    if (layer == CODEC_LAYER_NULL) {
         // done
     #if CODEC_ENCODE_CALLBACK
         if (codec->onEncode) {
@@ -367,6 +365,7 @@ Codec_Status Codec_encodeFrame(Codec* codec, Codec_Frame* frame, OStream* stream
         if ((mode & Codec_EncodeMode_Flush) != 0) {
             OStream_flush(stream);
         }
+        status = Codec_Status_Done;
     }
 
     return status;
@@ -403,7 +402,6 @@ void Codec_beginEncode(Codec* codec, Codec_Frame* frame, Codec_EncodeMode mode) 
  */
 void Codec_encode(Codec* codec, OStream* stream) {
     Codec_Frame* frame = codec->TxFrame;
-    Codec_Status status = Codec_Status_Pending;
     OStream lock;
     Codec_Error error;
     Stream_LenType layerLen;
@@ -421,16 +419,14 @@ void Codec_encode(Codec* codec, OStream* stream) {
             OStream_unlockIgnore(stream);
             // back to base layer
             codec->TxLayer = codec->BaseLayer;
-            // set status
-            status = Codec_Status_Error;
             return;
         }
         else {
         #if CODEC_ENCODE_PADDING
             #if CODEC_ENCODE_PADDING_MODE == CODEC_ENCODE_PADDING_IGNORE
-                OStream_ignore(&lock, OStream_space(&lock));
+                OStream_ignore(&lock, OStream_lockLen(stream, &lock));
             #else
-                OStream_writePadding(&lock, (uint8_t) CODEC_ENCODE_PADDING_VALUE, OStream_space(&lock));
+                OStream_writePadding(&lock, (uint8_t) CODEC_ENCODE_PADDING_VALUE, OStream_lockLen(stream, &lock));
             #endif
         #endif // CODEC_ENCODE_PADDING
             OStream_unlock(stream, &lock);
@@ -453,8 +449,6 @@ void Codec_encode(Codec* codec, OStream* stream) {
             OStream_flush(stream);
         }
     }
-
-    return error;
 }
 #endif // CODEC_ENCODE_ASYNC
 #endif // CODEC_ENCODE
