@@ -389,6 +389,7 @@ void Codec_encodeMode(Codec* codec, Codec_EncodeMode mode) {
  */
 void Codec_beginEncode(Codec* codec, Codec_Frame* frame, Codec_EncodeMode mode) {
     codec->TxLayer = codec->BaseLayer;
+    codec->TxFrame = frame;
     codec->EncodeMode = mode;
 }
 /**
@@ -401,21 +402,28 @@ void Codec_beginEncode(Codec* codec, Codec_Frame* frame, Codec_EncodeMode mode) 
  * @return Codec_Error
  */
 void Codec_encode(Codec* codec, OStream* stream) {
-    Codec_LayerImpl* layer = codec->BaseLayer;
     Codec_Frame* frame = codec->TxFrame;
+    Codec_Status status = Codec_Status_Pending;
     OStream lock;
     Codec_Error error;
+    Stream_LenType layerLen;
 
-    while (layer != CODEC_LAYER_NULL) {
-        OStream_lock(stream, &lock, layer->getLayerLen(codec, frame));
-        if((error = layer->write(codec, frame, &lock)) != CODEC_OK) {
+    while (codec->TxLayer != CODEC_LAYER_NULL &&
+            (layerLen = codec->TxLayer->getLayerLen(codec, frame)) <= OStream_space(stream)) {
+        OStream_lock(stream, &lock, layerLen);
+        if((error = codec->TxLayer->write(codec, frame, &lock)) != CODEC_OK) {
         #if CODEC_ENCODE_ERROR
             if (codec->onEncodeError) {
-                codec->onEncodeError(codec, frame, layer, error);
+                codec->onEncodeError(codec, frame, codec->TxLayer, error);
             }
         #endif
+            // unlock stream
             OStream_unlockIgnore(stream);
-            return Codec_Status_Error;
+            // back to base layer
+            codec->TxLayer = codec->BaseLayer;
+            // set status
+            status = Codec_Status_Error;
+            return;
         }
         else {
         #if CODEC_ENCODE_PADDING
@@ -429,12 +437,21 @@ void Codec_encode(Codec* codec, OStream* stream) {
             if (Codec_EncodeMode_FlushLayer == codec->EncodeMode) {
                 OStream_flush(stream);
             }
+            codec->TxLayer = codec->TxLayer->getUpperLayer(codec, frame);
         }
-        layer = layer->getUpperLayer(codec, frame);
     }
 
-    if (error == CODEC_OK && (codec->EncodeMode & Codec_EncodeMode_Flush) != 0) {
-        OStream_flush(stream);
+    if (codec->TxLayer == NULL) {
+        // done
+    #if CODEC_ENCODE_CALLBACK
+        if (codec->onEncode) {
+            codec->onEncode(codec, frame);
+        }
+    #endif // CODEC_ENCODE_CALLBACK
+
+        if ((codec->EncodeMode & Codec_EncodeMode_Flush) != 0) {
+            OStream_flush(stream);
+        }
     }
 
     return error;

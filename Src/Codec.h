@@ -30,11 +30,11 @@ extern "C" {
  */
 #define CODEC_ARGS                              1
 /**
- * @brief enable encode feature,
+ * @brief enable encode feature
  */
 #define CODEC_ENCODE                            1
 /**
- * @brief enable decode feature,
+ * @brief enable decode feature
  */
 #define CODEC_DECODE                            1
 
@@ -108,7 +108,7 @@ extern "C" {
     /**
      * @brief if stream has bytes keep decoding until end of stream
      */
-    #define CODEC_DECODE_CONTINUOUS             0
+    #define CODEC_DECODE_CONTINUOUS             1
 #endif // CODEC_DECODE
 /**
  * @brief choose what type use for codec frame, default is void
