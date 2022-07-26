@@ -1,5 +1,9 @@
 #include "Packet.h"
 
+#ifndef NULL
+    #define NULL          ((void*) 0)
+#endif
+
 #if STREAM_BYTE_ORDER
     #define __setByteOrder(STREAM)      IStream_setByteOrder(STREAM, PACKET_BYTE_ORDER)
 #else
@@ -66,10 +70,11 @@ static const Codec_LayerImpl PACKET_FOOTER_IMPL = {
 
 void Packet_init(Packet* frame, uint8_t* data, uint32_t size) {
     frame->Data = data;
+    frame->Len = size;
     frame->Size = size;
 }
 uint32_t Packet_len(Packet* frame) {
-    return frame->Size + PACKET_HEADER_SIZE + PACKET_FOOTER_SIZE;
+    return frame->Len + PACKET_HEADER_SIZE + PACKET_FOOTER_SIZE;
 }
 Codec_LayerImpl* Packet_baseLayer(void) {
     return (Codec_LayerImpl*) &PACKET_HEADER_IMPL;
@@ -88,8 +93,8 @@ static Codec_Error Packet_Header_parse(Codec* codec, Codec_Frame* frame, IStream
     if (IStream_readUInt16(stream) != __PACKET_FIRST_SIGN) {
         return (Codec_Error) Packet_Error_FirstSign;
     }
-    p->Size = IStream_readUInt32(stream);
-    if (p->Size >= PACKET_MAX_SIZE) {
+    p->Len = IStream_readUInt32(stream);
+    if (p->Len >= PACKET_MAX_SIZE || p->Len > p->Size) {
         return (Codec_Error) Packet_Error_PacketSize;
     }
     if (IStream_readUInt16(stream) != __PACKET_SECOND_SIGN) {
@@ -99,17 +104,16 @@ static Codec_Error Packet_Header_parse(Codec* codec, Codec_Frame* frame, IStream
 }
 static Codec_Error Packet_Data_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
     Packet* p = (Packet*) frame;
-    if (IStream_available(stream) < p->Size) {
+    if (IStream_available(stream) < p->Len) {
         return (Codec_Error) Packet_Error_Data;
     }
     if (p->Data == NULL) {
         return (Codec_Error) Packet_Error_DataPtr;
     }
-    IStream_readBytes(stream, p->Data, p->Size);
+    IStream_readBytes(stream, p->Data, p->Len);
     return CODEC_OK;
 }
 static Codec_Error Packet_Footer_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
-    Packet* p = (Packet*) frame;
     __setByteOrder(stream);
     if (IStream_readUInt32(stream) != __PACKET_FOOTER_SIGN) {
         return (Codec_Error) Packet_Error_FooterSign;
@@ -124,13 +128,16 @@ static Codec_Error Packet_Header_write(Codec* codec, Codec_Frame* frame, OStream
     Packet* p = (Packet*) frame;
     __setByteOrder(stream);
     OStream_writeUInt16(stream, __PACKET_FIRST_SIGN);
-    OStream_writeUInt32(stream, p->Size);
+    OStream_writeUInt32(stream, p->Len);
     OStream_writeUInt16(stream, __PACKET_SECOND_SIGN);
     return CODEC_OK;
 }
 static Codec_Error Packet_Data_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
     Packet* p = (Packet*) frame;
-    OStream_writeBytes(stream, p->Data, p->Size);
+    if (p->Data == NULL) {
+        return (Codec_Error) Packet_Error_DataPtr;
+    }
+    OStream_writeBytes(stream, p->Data, p->Len);
     return CODEC_OK;
 }
 static Codec_Error Packet_Footer_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
@@ -151,7 +158,7 @@ static Codec_LayerImpl* Packet_Header_getUpperLayer(Codec* codec, Codec_Frame* f
 
 static Stream_LenType Packet_Data_getLen(Codec* codec, Codec_Frame* frame) {
     Packet* p = (Packet*) frame;
-    return p->Size;
+    return p->Len;
 }
 static Codec_LayerImpl* Packet_Data_getUpperLayer(Codec* codec, Codec_Frame* frame) {
     return (Codec_LayerImpl*) &PACKET_FOOTER_IMPL;

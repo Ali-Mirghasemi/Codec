@@ -69,6 +69,7 @@ typedef enum {
 
 typedef struct {
     uint8_t*        Data;
+    uint32_t        Len;
     uint32_t        Size;
 } Packet;
 
