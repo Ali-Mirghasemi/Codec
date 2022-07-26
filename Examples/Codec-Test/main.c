@@ -886,14 +886,14 @@ uint32_t Assert_BasicFrame(BasicFrame* a, BasicFrame* b, uint16_t line, uint8_t 
     return 0;
 }
 uint32_t Assert_Packet(Packet* a, Packet* b, uint16_t line, uint8_t cycles, uint8_t index) {
-    if (!(a->Size == b->Size &&
-        memcmp(a->Data, b->Data, a->Size) == 0)) {
+    if (!(a->Len == b->Len &&
+        memcmp(a->Data, b->Data, a->Len) == 0)) {
         PRINTF("[Packet] Expected Len: %d, Found Len: %d\n",
-               b->Size, a->Size);
+               b->Len, a->Len);
         PRINTF("    Expected: ");
-        printArray(b->Data, b->Size);
+        printArray(b->Data, b->Len);
         PRINTF("\n    Found: ");
-        printArray(a->Data, a->Size);
+        printArray(a->Data, a->Len);
         PUTS("");
 
         return compress(line, cycles, index);
