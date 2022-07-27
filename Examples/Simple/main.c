@@ -72,9 +72,9 @@ int main() {
     OStream out;
     IStream in;
     Codec codec;
-    Codec_init(&codec, &FRAME_LAYER_HEADER, &tempFrame);
-    Codec_onFrame(&codec, Frame_onDetect);
-    Codec_onError(&codec, Frame_onError);
+    Codec_init(&codec, &FRAME_LAYER_HEADER);
+    Codec_onDecode(&codec, Frame_onDetect);
+    Codec_onDecodeError(&codec, Frame_onError);
 
     IStream_init(&in, NULL, inBuff, sizeof(inBuff));
     OStream_init(&out, NULL, outBuff, sizeof(outBuff));
@@ -86,12 +86,12 @@ int main() {
     mFrame.Data[3] = 0xDD;
     mFrame.Data[4] = 0xEE;
 
-    Codec_encode(&codec, &mFrame, &out, Codec_EncodeMode_Flush);
+    Codec_encodeFrame(&codec, &mFrame, &out, Codec_EncodeMode_Flush);
     printArray(outBuff, sizeof(outBuff));
 
     Stream_readStream(&out.Buffer, &in.Buffer, Stream_available(&out.Buffer));
     printArray(inBuff, sizeof(inBuff));
-    Codec_decode(&codec, &in);
+    Codec_decodeFrame(&codec, &tempFrame, &in);
 }
 
 void Frame_onDetect(Codec* codec, Codec_Frame* frame) {
