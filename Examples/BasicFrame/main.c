@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #include "Codec.h"
-#include "BasicFrame.h"
+#include "Frame/BasicFrame.h"
 
 #define FRAME_NUM           10
 
@@ -26,19 +26,20 @@ int main()
     // init decode frame
     BasicFrame_init(&frame, frameBuff, sizeof(frameBuff));
     // init codec
-    Codec_init(&codec, &BASIC_FRAME_IMPL, &frame);
-    Codec_onFrame(&codec, BasicFrame_onDecode);
+    Codec_init(&codec, BasicFrame_baseLayer());
+    Codec_onDecode(&codec, BasicFrame_onDecode);
     // init output stream
     OStream_init(&out, NULL, outBuff, sizeof(outBuff));
     // init input stream
     IStream_init(&in, NULL, inBuff, sizeof(inBuff));
 
+    Codec_beginDecode(&codec, &frame);
 
     while (num-- > 0) {
         // encode and send
         BasicFrame outFrame;
         BasicFrame_init(&outFrame, temp, sizeof(temp));
-        Codec_encode(&codec, &outFrame, &out, Codec_EncodeMode_Flush);
+        Codec_encodeFrame(&codec, &outFrame, &out, Codec_EncodeMode_Flush);
         // write output stream to input stream
         Stream_readStream(&out.Buffer, &in.Buffer, Stream_available(&out.Buffer));
         // decode
