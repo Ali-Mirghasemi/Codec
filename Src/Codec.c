@@ -45,6 +45,22 @@ void Codec_init(Codec* codec, Codec_LayerImpl* baseLayer) {
 #endif
 #endif // CODEC_ENCODE
 }
+/**
+ * @brief This function help you te get full frame size before encode
+ *
+ * @param codec
+ * @param frame
+ * @return Stream_LenType
+ */
+Stream_LenType Codec_frameSize(Codec* codec, Codec_Frame* frame) {
+    Codec_LayerImpl* layer = codec->BaseLayer;
+    uint32_t size = 0;
+    while (layer) {
+        size += layer->getLayerLen(codec, frame);
+        layer = layer->getUpperLayer(codec, frame);
+    }
+    return size;
+}
 #if CODEC_ARGS
 /**
  * @brief set user args

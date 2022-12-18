@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 #define CODEC_VER_MAJOR    0
-#define CODEC_VER_MINOR    2
+#define CODEC_VER_MINOR    3
 #define CODEC_VER_FIX      0
 
 #include <stdint.h>
@@ -270,6 +270,7 @@ struct __Codec {
 };
 
 void Codec_init(Codec* codec, Codec_LayerImpl* baseLayer);
+Stream_LenType Codec_frameSize(Codec* codec, Codec_Frame* frame);
 
 #if CODEC_ARGS
     void  Codec_setArgs(Codec* codec, void* args);
