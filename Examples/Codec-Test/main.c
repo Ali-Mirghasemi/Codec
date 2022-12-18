@@ -41,6 +41,7 @@ uint32_t Test_Frame_Sync_Packet(void);
 uint32_t Test_Async_Noise_Packet(void);
 uint32_t Test_Async_Sync_Packet(void);
 uint32_t Test_Async_Part(void);
+uint32_t Test_Frame_Size(void);
 
 static const TestFn TESTS[] = {
     Test_Frame_BasicFrame,
@@ -52,6 +53,7 @@ static const TestFn TESTS[] = {
     Test_Async_Noise_Packet,
     Test_Async_Sync_Packet,
     Test_Async_Part,
+    Test_Frame_Size,
 };
 static const uint32_t TESTS_LEN = sizeof(TESTS) / sizeof(TESTS[0]);
 
@@ -818,6 +820,49 @@ uint32_t Test_Async_Part(void) {
     testPacket(PAT5, 3, 1);
     testPacket(PAT5, 3, 3);
     testPacket(PAT5, 3, 7);
+
+    return 0;
+}
+
+uint32_t Test_Frame_Size(void) {
+    #define testBasicFrameSize(LEN)         PRINTF("BasicFrame Data Size: %d\n", LEN);\
+                                            basicFrame.Header.PacketSize = LEN;\
+                                            assert(Num, Codec_frameSize(&basicCodec, &basicFrame), BasicFrame_len(&basicFrame))
+
+    #define testPacketFrameSize(LEN)        PRINTF("PacketFrame Data Size: %d\n", LEN);\
+                                            frame.Len = LEN;\
+                                            assert(Num, Codec_frameSize(&packetCodec, &frame), Packet_len(&frame))
+
+    Codec basicCodec;
+    Codec packetCodec;
+    BasicFrame basicFrame;
+    Packet frame;
+
+    Codec_init(&basicCodec, BasicFrame_baseLayer());
+    BasicFrame_init(&basicFrame, NULL, 0);
+    Codec_init(&packetCodec, Packet_baseLayer());
+    Packet_init(&frame, NULL, 0);
+
+    cycles = 0;
+    index = 0;
+
+    int LEN = 10;
+
+    testBasicFrameSize(0);
+    testBasicFrameSize(4);
+    testBasicFrameSize(5);
+    testBasicFrameSize(10);
+    testBasicFrameSize(12);
+    testBasicFrameSize(20);
+    testBasicFrameSize(100);
+
+    testPacketFrameSize(0);
+    testPacketFrameSize(4);
+    testPacketFrameSize(5);
+    testPacketFrameSize(10);
+    testPacketFrameSize(12);
+    testPacketFrameSize(20);
+    testPacketFrameSize(100);
 
     return 0;
 }
