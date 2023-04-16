@@ -261,9 +261,9 @@ void Codec_decode(Codec* codec, IStream* stream) {
             IStream_ignore(stream, 1);
         }
         else {
-        #if CODEC_LAYER_PADDING
+        #if CODEC_DECODE_PADDING
             // add padding
-            IStream_ignore(stream, IStream_lockLen(stream, &lock));
+            IStream_ignore(&lock, IStream_lockLen(stream, &lock));
         #endif
             // unlock stream
             IStream_unlock(stream, &lock);
