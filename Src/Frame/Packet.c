@@ -168,6 +168,6 @@ static Stream_LenType Packet_Footer_getLen(Codec* codec, Codec_Frame* frame) {
     return PACKET_FOOTER_SIZE;
 }
 static Codec_LayerImpl* Packet_Footer_getUpperLayer(Codec* codec, Codec_Frame* frame) {
-    return NULL;
+    return CODEC_LAYER_NULL;
 }
 
