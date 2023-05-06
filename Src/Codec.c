@@ -182,8 +182,10 @@ Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, IStream* stream
         }
         else {
         #if CODEC_DECODE_PADDING
-            // add padding
-            IStream_ignore(&lock, IStream_lockLen(stream, &lock));
+            if ((layerLen = IStream_availableUncheck(&lock)) > 0) {
+                // add padding
+                IStream_ignore(&lock, layerLen);
+            }
         #endif
             // unlock stream
             IStream_unlock(stream, &lock);
@@ -262,8 +264,10 @@ void Codec_decode(Codec* codec, IStream* stream) {
         }
         else {
         #if CODEC_DECODE_PADDING
-            // add padding
-            IStream_ignore(&lock, IStream_lockLen(stream, &lock));
+            if ((layerLen = IStream_availableUncheck(&lock)) > 0) {
+                // add padding
+                IStream_ignore(&lock, layerLen);
+            }
         #endif
             // unlock stream
             IStream_unlock(stream, &lock);
@@ -356,11 +360,13 @@ Codec_Status Codec_encodeFrame(Codec* codec, Codec_Frame* frame, OStream* stream
         }
         else {
         #if CODEC_ENCODE_PADDING
+            if ((layerLen = OStream_spaceUncheck(&lock)) > 0) {
             #if CODEC_ENCODE_PADDING_MODE == CODEC_ENCODE_PADDING_IGNORE
-                OStream_ignore(&lock, OStream_lockLen(stream, &lock));
+                OStream_ignore(&lock, layerLen);
             #else
-                OStream_writePadding(&lock, (uint8_t) CODEC_ENCODE_PADDING_VALUE, OStream_lockLen(stream, &lock));
+                OStream_writePadding(&lock, (uint8_t) CODEC_ENCODE_PADDING_VALUE, layerLen);
             #endif
+            }
         #endif // CODEC_ENCODE_PADDING
             OStream_unlock(stream, &lock);
             if (Codec_EncodeMode_FlushLayer == mode) {
@@ -439,11 +445,13 @@ void Codec_encode(Codec* codec, OStream* stream) {
         }
         else {
         #if CODEC_ENCODE_PADDING
+            if ((layerLen = OStream_spaceUncheck(&lock)) > 0) {
             #if CODEC_ENCODE_PADDING_MODE == CODEC_ENCODE_PADDING_IGNORE
-                OStream_ignore(&lock, OStream_lockLen(stream, &lock));
+                OStream_ignore(&lock, layerLen);
             #else
-                OStream_writePadding(&lock, (uint8_t) CODEC_ENCODE_PADDING_VALUE, OStream_lockLen(stream, &lock));
+                OStream_writePadding(&lock, (uint8_t) CODEC_ENCODE_PADDING_VALUE, layerLen);
             #endif
+            }
         #endif // CODEC_ENCODE_PADDING
             OStream_unlock(stream, &lock);
             if (Codec_EncodeMode_FlushLayer == codec->EncodeMode) {
