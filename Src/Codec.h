@@ -18,7 +18,7 @@ extern "C" {
 
 #define CODEC_VER_MAJOR    0
 #define CODEC_VER_MINOR    3
-#define CODEC_VER_FIX      0
+#define CODEC_VER_FIX      1
 
 #include <stdint.h>
 
