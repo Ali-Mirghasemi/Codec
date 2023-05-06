@@ -138,7 +138,7 @@ Stream_LenType BasicFrame_Header_getLen(Codec* codec, Codec_Frame* frame) {
  * @return Codec_LayerImpl*
  */
 Codec_LayerImpl* BasicFrame_Header_getUpperLayer(Codec* codec, Codec_Frame* frame) {
-    return &BASIC_FRAME_DATA_IMPL;
+    return (Codec_LayerImpl*) &BASIC_FRAME_DATA_IMPL;
 }
 /**
  * @brief data get len function
