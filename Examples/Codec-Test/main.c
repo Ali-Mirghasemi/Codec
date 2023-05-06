@@ -16,6 +16,25 @@
 
 #define CYCLES_NUM              20
 
+// ------------------------ Custom Frame -------------------------
+typedef struct {
+    uint32_t            PacketSize;
+} CFrame_Header;
+
+typedef struct {
+    uint8_t*            Data;
+} CFame_Data;
+
+typedef struct {
+    CFrame_Header       Header;
+    CFame_Data          Data;
+} CFrame;
+
+#define CFRAME_WRITE_DIV        1
+#define CFRAME_READ_DIV         2
+#define CFRAME_DIV              ((CFRAME_READ_DIV) > (CFRAME_WRITE_DIV) ? (CFRAME_READ_DIV) : (CFRAME_WRITE_DIV))
+// ---------------------------------------------------------------
+
 uint8_t  cycles;
 uint8_t  index;
 uint32_t errorCode;
@@ -24,6 +43,7 @@ uint32_t Assert_Num(int a, int b, uint16_t line, uint8_t cycles, uint8_t index);
 uint32_t Assert_Status(Codec_Status a, Codec_Status b, uint16_t line, uint8_t cycles, uint8_t index);
 uint32_t Assert_Bytes(uint8_t* a, uint8_t* b, int len, uint16_t line, uint8_t cycles, uint8_t index);
 uint32_t Assert_BasicFrame(BasicFrame* a, BasicFrame* b, uint16_t line, uint8_t cycles, uint8_t index);
+uint32_t Assert_CFrame(CFrame* a, CFrame* b, uint16_t line, uint8_t cycles, uint8_t index);
 uint32_t Assert_Packet(Packet* a, Packet* b, uint16_t line, uint8_t cycles, uint8_t index);
 
 #define assert(TYPE, ...)               if ((errorCode = Assert_ ##TYPE (__VA_ARGS__, __LINE__, cycles, index))) return errorCode;
@@ -42,6 +62,8 @@ uint32_t Test_Async_Noise_Packet(void);
 uint32_t Test_Async_Sync_Packet(void);
 uint32_t Test_Async_Part(void);
 uint32_t Test_Frame_Size(void);
+uint32_t Test_Frame_CFrame(void);
+uint32_t Test_Buffer_CFrame(void);
 
 static const TestFn TESTS[] = {
     Test_Frame_BasicFrame,
@@ -54,6 +76,8 @@ static const TestFn TESTS[] = {
     Test_Async_Sync_Packet,
     Test_Async_Part,
     Test_Frame_Size,
+    Test_Frame_CFrame,
+    Test_Buffer_CFrame,
 };
 static const uint32_t TESTS_LEN = sizeof(TESTS) / sizeof(TESTS[0]);
 
@@ -69,7 +93,7 @@ void Codec_onEncodePacket(Codec* codec, Codec_Frame* frame);
 
 int main()
 {
-    int i;
+    uint32_t i;
     uint32_t result;
     uint32_t errorCount = 0;
 
@@ -108,11 +132,11 @@ uint32_t Test_Frame_BasicFrame(void) {
                                             }
 
 
-    static const uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-    static const uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
-    static const uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
-    static const uint8_t PAT4[2] = {0x3A, 0x3B};
-    static const uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+    static uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+    static uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
+    static uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
+    static uint8_t PAT4[2] = {0x3A, 0x3B};
+    static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
     OStream ostream;
@@ -153,6 +177,7 @@ uint32_t Test_Frame_BasicFrame(void) {
     return 0;
 }
 uint32_t Test_Buffer_BasicFrame(void) {
+    #undef testBasicFrame
     #define testBasicFrame(PAT)             PRINTF(#PAT "\n");\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
                                                 BasicFrame_init(&frame, PAT, sizeof(PAT));\
@@ -164,11 +189,11 @@ uint32_t Test_Buffer_BasicFrame(void) {
                                             }
 
 
-    static const uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-    static const uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
-    static const uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
-    static const uint8_t PAT4[2] = {0x3A, 0x3B};
-    static const uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+    static uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+    static uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
+    static uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
+    static uint8_t PAT4[2] = {0x3A, 0x3B};
+    static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
 
@@ -214,11 +239,11 @@ uint32_t Test_Frame_Packet(void) {
                                             }
 
 
-    static const uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-    static const uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
-    static const uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
-    static const uint8_t PAT4[2] = {0x3A, 0x3B};
-    static const uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+    static uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+    static uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
+    static uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
+    static uint8_t PAT4[2] = {0x3A, 0x3B};
+    static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
     OStream ostream;
@@ -261,6 +286,7 @@ uint32_t Test_Frame_Packet(void) {
     return 0;
 }
 uint32_t Test_Buffer_Packet(void) {
+    #undef testPacket
     #define testPacket(PAT)                 PRINTF(#PAT "\n");\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
                                                 Packet_init(&frame, PAT, sizeof(PAT));\
@@ -271,11 +297,11 @@ uint32_t Test_Buffer_Packet(void) {
                                                 assert(Packet, &tempFrame, &frame);\
                                             }
 
-    static const uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-    static const uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
-    static const uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
-    static const uint8_t PAT4[2] = {0x3A, 0x3B};
-    static const uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+    static uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+    static uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
+    static uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
+    static uint8_t PAT4[2] = {0x3A, 0x3B};
+    static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
     Codec codec;
@@ -303,6 +329,7 @@ uint32_t Test_Buffer_Packet(void) {
     return 0;
 }
 uint32_t Test_Frame_Noise_Packet(void) {
+    #undef testPacket
     #define addNoise(STREAM, N)             OStream_writePadding(STREAM, 0xFF, N)
     #define testPacket(PAT, N, S)           PRINTF(#PAT " %dx - Noise: %d\n", N, S);\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
@@ -320,11 +347,11 @@ uint32_t Test_Frame_Noise_Packet(void) {
                                                 }\
                                             }
 
-    static const uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-    static const uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
-    static const uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
-    static const uint8_t PAT4[2] = {0x3A, 0x3B};
-    static const uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+    static uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+    static uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
+    static uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
+    static uint8_t PAT4[2] = {0x3A, 0x3B};
+    static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
     OStream ostream;
@@ -413,11 +440,11 @@ uint32_t Test_Frame_Sync_Packet(void) {
                                                 }\
                                             }
 
-    static const uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-    static const uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
-    static const uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
-    static const uint8_t PAT4[2] = {0x3A, 0x3B};
-    static const uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+    static uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+    static uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
+    static uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
+    static uint8_t PAT4[2] = {0x3A, 0x3B};
+    static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
     OStream ostream;
@@ -491,6 +518,7 @@ uint32_t Test_Frame_Sync_Packet(void) {
     return 0;
 }
 uint32_t Test_Async_Noise_Packet(void) {
+    #undef testPacket
     #define addNoise(STREAM, N)             OStream_writePadding(STREAM, 0xFF, N)
 #if !CODEC_DECODE_CONTINUOUS
     #define testPacket(PAT, N, S)           PRINTF(#PAT " %dx - Noise: %d\n", N, S);\
@@ -528,11 +556,11 @@ uint32_t Test_Async_Noise_Packet(void) {
 #endif
 
 
-    static const uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-    static const uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
-    static const uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
-    static const uint8_t PAT4[2] = {0x3A, 0x3B};
-    static const uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+    static uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+    static uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
+    static uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
+    static uint8_t PAT4[2] = {0x3A, 0x3B};
+    static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
     OStream ostream;
@@ -608,6 +636,7 @@ uint32_t Test_Async_Noise_Packet(void) {
     return 0;
 }
 uint32_t Test_Async_Sync_Packet(void) {
+    #undef testPacket
     #define addNoise(STREAM, N)             OStream_writePadding(STREAM, 0xFF, N)
 #if !CODEC_DECODE_CONTINUOUS
     #define testPacket(PAT, N, S)           PRINTF(#PAT " %dx - Noise: %d\n", N, S);\
@@ -644,11 +673,11 @@ uint32_t Test_Async_Sync_Packet(void) {
 #endif
 
 
-    static const uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-    static const uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
-    static const uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
-    static const uint8_t PAT4[2] = {0x3A, 0x3B};
-    static const uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+    static uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+    static uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
+    static uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
+    static uint8_t PAT4[2] = {0x3A, 0x3B};
+    static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
     OStream ostream;
@@ -725,6 +754,7 @@ uint32_t Test_Async_Sync_Packet(void) {
     return 0;
 }
 uint32_t Test_Async_Part(void) {
+    #undef testPacket
     #define testPacket(PAT, N, S)           PRINTF(#PAT " %dx\n", N);\
                                             Codec_beginDecode(&codec, &tempFrame);\
                                             pFrame = &frame;\
@@ -742,11 +772,11 @@ uint32_t Test_Async_Part(void) {
                                                 assert(Num, frameCount, 1);\
                                             }
 
-    static const uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-    static const uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
-    static const uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
-    static const uint8_t PAT4[2] = {0x3A, 0x3B};
-    static const uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+    static uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+    static uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
+    static uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
+    static uint8_t PAT4[2] = {0x3A, 0x3B};
+    static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
     OStream ostream;
@@ -867,6 +897,231 @@ uint32_t Test_Frame_Size(void) {
     return 0;
 }
 
+// ------------------------- Custom Frame --------------------------
+
+#if CODEC_DECODE
+static Codec_Error      CFrame_Header_parse(Codec* codec, Codec_Frame* frame, IStream* stream);
+static Codec_Error      CFrame_Data_parse(Codec* codec, Codec_Frame* frame, IStream* stream);
+static Codec_Error      CFrame_Footer_parse(Codec* codec, Codec_Frame* frame, IStream* stream);
+#endif // CODEC_DECODE
+
+#if CODEC_ENCODE
+static Codec_Error      CFrame_Header_write(Codec* codec, Codec_Frame* frame, OStream* stream);
+static Codec_Error      CFrame_Data_write(Codec* codec, Codec_Frame* frame, OStream* stream);
+static Codec_Error      CFrame_Footer_write(Codec* codec, Codec_Frame* frame, OStream* stream);
+#endif // CODEC_ENCODE
+
+static Stream_LenType   CFrame_Header_getLen(Codec* codec, Codec_Frame* frame);
+static Codec_LayerImpl* CFrame_Header_getUpperLayer(Codec* codec, Codec_Frame* frame);
+
+static Stream_LenType   CFrame_Data_getLen(Codec* codec, Codec_Frame* frame);
+static Codec_LayerImpl* CFrame_Data_getUpperLayer(Codec* codec, Codec_Frame* frame);
+
+static Stream_LenType   CFrame_Footer_getLen(Codec* codec, Codec_Frame* frame);
+static Codec_LayerImpl* CFrame_Footer_getUpperLayer(Codec* codec, Codec_Frame* frame);
+
+static const Codec_LayerImpl CFRAME_HEADER_IMPL = {
+#if CODEC_DECODE
+    CFrame_Header_parse,
+#endif
+#if CODEC_ENCODE
+    CFrame_Header_write,
+#endif
+    CFrame_Header_getLen,
+    CFrame_Header_getUpperLayer,
+};
+
+static const Codec_LayerImpl CFRAME_DATA_IMPL = {
+#if CODEC_DECODE
+    CFrame_Data_parse,
+#endif
+#if CODEC_ENCODE
+    CFrame_Data_write,
+#endif
+    CFrame_Data_getLen,
+    CFrame_Data_getUpperLayer,
+};
+
+static const Codec_LayerImpl CFRAME_FOOTER_IMPL = {
+#if CODEC_DECODE
+    CFrame_Footer_parse,
+#endif
+#if CODEC_ENCODE
+    CFrame_Footer_write,
+#endif
+    CFrame_Footer_getLen,
+    CFrame_Footer_getUpperLayer,
+};
+
+#if CODEC_DECODE
+static Codec_Error      CFrame_Header_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
+    ((CFrame*) frame)->Header.PacketSize = IStream_readUInt32(stream);
+    return CODEC_OK;
+}
+static Codec_Error      CFrame_Data_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
+    CFrame* cFrame = (CFrame*) frame;
+    IStream_readBytes(stream, cFrame->Data.Data, cFrame->Header.PacketSize / CFRAME_READ_DIV);
+    return CODEC_OK;
+}
+static Codec_Error      CFrame_Footer_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
+    IStream_readUInt32(stream) == 0xABCD1234;
+    return CODEC_OK;
+}
+#endif // CODEC_DECODE
+
+#if CODEC_ENCODE
+static Codec_Error      CFrame_Header_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
+    OStream_writeUInt32(stream, ((CFrame*) frame)->Header.PacketSize);
+    return CODEC_OK;
+}
+static Codec_Error      CFrame_Data_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
+    CFrame* cFrame = (CFrame*) frame;
+    OStream_writeBytes(stream, cFrame->Data.Data, cFrame->Header.PacketSize / CFRAME_WRITE_DIV);
+    return CODEC_OK;
+}
+static Codec_Error      CFrame_Footer_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
+    OStream_writeUInt32(stream, 0xABCD1234);
+}
+#endif // CODEC_ENCODE
+
+static Stream_LenType   CFrame_Header_getLen(Codec* codec, Codec_Frame* frame) {
+    return sizeof(CFrame_Header);
+}
+static Codec_LayerImpl* CFrame_Header_getUpperLayer(Codec* codec, Codec_Frame* frame) {
+    return (Codec_LayerImpl*) &CFRAME_DATA_IMPL;
+}
+
+static Stream_LenType   CFrame_Data_getLen(Codec* codec, Codec_Frame* frame) {
+    return ((CFrame*) frame)->Header.PacketSize;
+}
+static Codec_LayerImpl* CFrame_Data_getUpperLayer(Codec* codec, Codec_Frame* frame) {
+    return (Codec_LayerImpl*) &CFRAME_FOOTER_IMPL;
+}
+
+static Stream_LenType   CFrame_Footer_getLen(Codec* codec, Codec_Frame* frame) {
+    return sizeof(uint32_t);
+}
+static Codec_LayerImpl* CFrame_Footer_getUpperLayer(Codec* codec, Codec_Frame* frame) {
+    return CODEC_LAYER_NULL;
+}
+
+void CFrame_init(CFrame* frame, uint8_t* data, uint32_t size) {
+    frame->Header.PacketSize = size;
+    frame->Data.Data = data;
+}
+
+uint32_t CFrame_len(CFrame* frame) {
+    return frame->Header.PacketSize + sizeof(BasicFrame_Header) + sizeof(uint32_t);
+}
+
+Codec_LayerImpl* CFrame_baseLayer(void) {
+    return (Codec_LayerImpl*) &CFRAME_HEADER_IMPL;
+}
+
+uint32_t Test_Frame_CFrame(void) {
+    #define testCFrame(PAT, N)              PRINTF(#PAT " %dx\n", N);\
+                                            for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
+                                                for (index = 0; index < N; index++) {\
+                                                    CFrame_init(&frame, PAT, sizeof(PAT));\
+                                                    Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * CFrame_len(&frame));\
+                                                }\
+                                                Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
+                                                for (index = 0; index < N; index++) {\
+                                                    status = Codec_decodeFrame(&codec, &tempFrame, &istream);\
+                                                    assert(Status, status, Codec_Status_Done);\
+                                                    assert(CFrame, &tempFrame, &frame);\
+                                                }\
+                                            }
+
+
+    static uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+    static uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
+    static uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
+    static uint8_t PAT4[2] = {0x3A, 0x3B};
+    static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+
+    Codec_Status status;
+    OStream ostream;
+    IStream istream;
+    Codec codec;
+    CFrame frame;
+    CFrame tempFrame;
+
+    uint8_t txBuff[42];
+    uint8_t rxBuff[42];
+    uint8_t tempBuff[30];
+
+    OStream_init(&ostream, NULL, txBuff, sizeof(txBuff));
+    IStream_init(&istream, NULL, rxBuff, sizeof(rxBuff));
+    Codec_init(&codec, CFrame_baseLayer());
+    CFrame_init(&tempFrame, tempBuff, sizeof(tempBuff));
+
+    testCFrame(PAT1, 1);
+    testCFrame(PAT1, 2);
+    testCFrame(PAT1, 3);
+
+    testCFrame(PAT2, 1);
+    testCFrame(PAT2, 2);
+    testCFrame(PAT2, 3);
+
+    testCFrame(PAT3, 1);
+    testCFrame(PAT3, 2);
+    testCFrame(PAT3, 3);
+
+    testCFrame(PAT4, 1);
+    testCFrame(PAT4, 2);
+    testCFrame(PAT4, 3);
+
+    testCFrame(PAT5, 1);
+    testCFrame(PAT5, 2);
+    testCFrame(PAT5, 3);
+
+    return 0;
+}
+uint32_t Test_Buffer_CFrame(void) {
+    #undef testCFrame
+    #define testCFrame(PAT)                 PRINTF(#PAT "\n");\
+                                            for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
+                                                CFrame_init(&frame, PAT, sizeof(PAT));\
+                                                status = Codec_encodeBuffer(&codec, &frame, buffer, sizeof(buffer));\
+                                                assert(Status, status, Codec_Status_Done);\
+                                                status = Codec_decodeBuffer(&codec, &tempFrame, buffer, sizeof(buffer));\
+                                                assert(Status, status, Codec_Status_Done);\
+                                                assert(CFrame, &tempFrame, &frame);\
+                                            }
+
+
+    static uint8_t PAT1[5] = {0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+    static uint8_t PAT2[3] = {0x1A, 0x1B, 0x1C};
+    static uint8_t PAT3[4] = {0x2A, 0x2B, 0x2C, 0x2D};
+    static uint8_t PAT4[2] = {0x3A, 0x3B};
+    static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+
+    Codec_Status status;
+
+    Codec codec;
+    CFrame frame;
+    CFrame tempFrame;
+
+    uint8_t buffer[37];
+    uint8_t tempBuff[30];
+
+
+    Codec_init(&codec, CFrame_baseLayer());
+    CFrame_init(&tempFrame, tempBuff, sizeof(tempBuff));
+
+    index = 0;
+
+    testCFrame(PAT1);
+    testCFrame(PAT2);
+    testCFrame(PAT3);
+    testCFrame(PAT4);
+    testCFrame(PAT5);
+
+    return 0;
+}
+
 // -------------------------- Assert Functions ------------------------
 void Codec_onDecodeBasicFrame(Codec* codec, Codec_Frame* frame) {
     if ((errorCode = Assert_BasicFrame((BasicFrame*) pFrame, (BasicFrame*) frame, line, cycles, index)) == 0) {
@@ -919,6 +1174,21 @@ uint32_t Assert_BasicFrame(BasicFrame* a, BasicFrame* b, uint16_t line, uint8_t 
     if (!(a->Header.PacketSize == b->Header.PacketSize &&
         memcmp(a->Data.Data, b->Data.Data, a->Header.PacketSize) == 0)) {
         PRINTF("[BasicFrame] Expected Len: %d, Found Len: %d\n",
+               b->Header.PacketSize, a->Header.PacketSize);
+        PRINTF("    Expected: ");
+        printArray(b->Data.Data, b->Header.PacketSize);
+        PRINTF("\n    Found: ");
+        printArray(a->Data.Data, a->Header.PacketSize);
+        PUTS("");
+
+        return compress(line, cycles, index);
+    }
+    return 0;
+}
+uint32_t Assert_CFrame(CFrame* a, CFrame* b, uint16_t line, uint8_t cycles, uint8_t index) {
+    if (!(a->Header.PacketSize == b->Header.PacketSize &&
+        memcmp(a->Data.Data, b->Data.Data, a->Header.PacketSize / CFRAME_DIV) == 0)) {
+        PRINTF("[CFrame] Expected Len: %d, Found Len: %d\n",
                b->Header.PacketSize, a->Header.PacketSize);
         PRINTF("    Expected: ");
         printArray(b->Data.Data, b->Header.PacketSize);
