@@ -2,7 +2,7 @@
  * @file Codec.h
  * @author Ali Mirghasemi (ali.mirghasemi1376@gmail.com)
  * @brief this library help you for encode/decode frames, it's based on stream library
- * @version 0.2
+ * @version 0.4
  * @date 2021-09-01
  *
  * @copyright Copyright (c) 2021
@@ -17,8 +17,8 @@ extern "C" {
 #endif
 
 #define CODEC_VER_MAJOR    0
-#define CODEC_VER_MINOR    3
-#define CODEC_VER_FIX      1
+#define CODEC_VER_MINOR    4
+#define CODEC_VER_FIX      0
 
 #include <stdint.h>
 
@@ -105,10 +105,6 @@ extern "C" {
      * @brief enable decode padding for keep layer size fixed
      */
     #define CODEC_DECODE_PADDING                1
-    /**
-     * @brief if stream has bytes keep decoding until end of stream
-     */
-    #define CODEC_DECODE_CONTINUOUS             1
 #endif // CODEC_DECODE
 /**
  * @brief choose what type use for codec frame, default is void
@@ -228,8 +224,8 @@ struct __Codec_LayerImpl {
 #if CODEC_ENCODE
     Codec_WriteFn           write;
 #endif
-    Codec_GetLenFn          getLayerLen;
-    Codec_GetUpperLayerFn   getUpperLayer;
+    Codec_GetLenFn          getLen;
+    Codec_GetUpperLayerFn   nextLayer;
 };
 /**
  * @brief hold codec parameters
@@ -267,6 +263,9 @@ struct __Codec {
     Codec_OnErrorFn         onEncodeError;
 #endif
 #endif // CODEC_ENCODE
+    uint8_t                 FreeStream      : 1;
+    uint8_t                 DecodeAll       : 1;
+    uint8_t                 Reserved        : 6;
 };
 
 void Codec_init(Codec* codec, Codec_LayerImpl* baseLayer);
@@ -329,6 +328,8 @@ Stream_LenType Codec_frameSize(Codec* codec, Codec_Frame* frame);
 
 #endif
 
+void Codec_setFreeStream(Codec* codec, uint8_t enabled);
+void Codec_setDecodeAll(Codec* codec, uint8_t enabled);
 
 #ifdef __cplusplus
 };
