@@ -184,7 +184,7 @@ typedef Stream_LenType (*Codec_GetLenFn)(Codec* codec, Codec_Frame* frame);
 /**
  * @brief this function return next or upper layer of packet, return null if it's last layer
  */
-typedef Codec_LayerImpl* (*Codec_GetUpperLayerFn)(Codec* codec, Codec_Frame* frame);
+typedef Codec_LayerImpl* (*Codec_NextLayerFn)(Codec* codec, Codec_Frame* frame);
 /**
  * @brief this function is called when codec decode/encode a frame completed
  */
@@ -225,7 +225,7 @@ struct __Codec_LayerImpl {
     Codec_WriteFn           write;
 #endif
     Codec_GetLenFn          getLen;
-    Codec_GetUpperLayerFn   nextLayer;
+    Codec_NextLayerFn       nextLayer;
 };
 /**
  * @brief hold codec parameters
