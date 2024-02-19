@@ -331,6 +331,16 @@ Stream_LenType Codec_frameSize(Codec* codec, Codec_Frame* frame);
 void Codec_setFreeStream(Codec* codec, uint8_t enabled);
 void Codec_setDecodeAll(Codec* codec, uint8_t enabled);
 
+// ----------------------------------- Macros -----------------------------------
+#if CODEC_DECODE && CODEC_ENCODE
+    #define CODEC_LAYER_IMPL(parse, write, getLen, nextLayer) { .parse = parse, .write = write, .getLen = getLen, .nextLayer = nextLayer }
+#elif CODEC_DECODE
+    #define CODEC_LAYER_IMPL(parse, write, getLen, nextLayer) { .parse = parse, .getLen = getLen, .nextLayer = nextLayer }
+#elif CODEC_ENCODE
+    #define CODEC_LAYER_IMPL(parse, write, getLen, nextLayer) { .write = write, .getLen = getLen, .nextLayer = nextLayer }
+#endif
+
+
 #ifdef __cplusplus
 };
 #endif
