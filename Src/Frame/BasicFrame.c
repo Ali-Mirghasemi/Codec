@@ -10,11 +10,10 @@ static Codec_Error      BasicFrame_Header_write(Codec* codec, Codec_Frame* frame
 static Codec_Error      BasicFrame_Data_write(Codec* codec, Codec_Frame* frame, OStream* stream);
 #endif // CODEC_ENCODE
 
-static Stream_LenType   BasicFrame_Header_getLen(Codec* codec, Codec_Frame* frame);
-static Codec_LayerImpl* BasicFrame_Header_getUpperLayer(Codec* codec, Codec_Frame* frame);
+static Stream_LenType   BasicFrame_Header_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
+static Codec_LayerImpl* BasicFrame_Header_nextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
-static Stream_LenType   BasicFrame_Data_getLen(Codec* codec, Codec_Frame* frame);
-static Codec_LayerImpl* BasicFrame_Data_getUpperLayer(Codec* codec, Codec_Frame* frame);
+static Stream_LenType   BasicFrame_Data_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
 static const Codec_LayerImpl BASIC_FRAME_HEADER_IMPL = {
 #if CODEC_DECODE
@@ -24,7 +23,7 @@ static const Codec_LayerImpl BASIC_FRAME_HEADER_IMPL = {
     BasicFrame_Header_write,
 #endif
     BasicFrame_Header_getLen,
-    BasicFrame_Header_getUpperLayer,
+    BasicFrame_Header_nextLayer,
 };
 
 static const Codec_LayerImpl BASIC_FRAME_DATA_IMPL = {
@@ -35,7 +34,7 @@ static const Codec_LayerImpl BASIC_FRAME_DATA_IMPL = {
     BasicFrame_Data_write,
 #endif
     BasicFrame_Data_getLen,
-    BasicFrame_Data_getUpperLayer,
+    Codec_endLayer,
 };
 
 /**
@@ -127,7 +126,7 @@ Codec_Error BasicFrame_Data_write(Codec* codec, Codec_Frame* frame, OStream* str
  * @param frame
  * @return Stream_LenType
  */
-Stream_LenType BasicFrame_Header_getLen(Codec* codec, Codec_Frame* frame) {
+Stream_LenType BasicFrame_Header_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return sizeof(BasicFrame_Header);
 }
 /**
@@ -137,7 +136,7 @@ Stream_LenType BasicFrame_Header_getLen(Codec* codec, Codec_Frame* frame) {
  * @param frame
  * @return Codec_LayerImpl*
  */
-Codec_LayerImpl* BasicFrame_Header_getUpperLayer(Codec* codec, Codec_Frame* frame) {
+Codec_LayerImpl* BasicFrame_Header_nextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return (Codec_LayerImpl*) &BASIC_FRAME_DATA_IMPL;
 }
 /**
@@ -147,16 +146,7 @@ Codec_LayerImpl* BasicFrame_Header_getUpperLayer(Codec* codec, Codec_Frame* fram
  * @param frame
  * @return Stream_LenType
  */
-Stream_LenType BasicFrame_Data_getLen(Codec* codec, Codec_Frame* frame) {
+Stream_LenType BasicFrame_Data_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return ((BasicFrame*) frame)->Header.PacketSize;
 }
-/**
- * @brief data get upper layer function
- *
- * @param codec
- * @param frame
- * @return Codec_LayerImpl*
- */
-Codec_LayerImpl* BasicFrame_Data_getUpperLayer(Codec* codec, Codec_Frame* frame) {
-    return CODEC_LAYER_NULL;
-}
+

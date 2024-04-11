@@ -1295,11 +1295,11 @@ uint32_t Test_Async_Part(void) {
 uint32_t Test_Frame_Size(void) {
     #define testBasicFrameSize(LEN)         PRINTF("BasicFrame Data Size: %d\n", LEN);\
                                             basicFrame.Header.PacketSize = LEN;\
-                                            assert(Num, Codec_frameSize(&basicCodec, &basicFrame), BasicFrame_len(&basicFrame))
+                                            assert(Num, Codec_frameSize(&basicCodec, &basicFrame, Codec_Phase_Encode), BasicFrame_len(&basicFrame))
 
     #define testPacketFrameSize(LEN)        PRINTF("PacketFrame Data Size: %d\n", LEN);\
                                             frame.Len = LEN;\
-                                            assert(Num, Codec_frameSize(&packetCodec, &frame), Packet_len(&frame))
+                                            assert(Num, Codec_frameSize(&packetCodec, &frame, Codec_Phase_Encode), Packet_len(&frame))
 
     Codec basicCodec;
     Codec packetCodec;
@@ -1349,14 +1349,14 @@ static Codec_Error      CFrame_Data_write(Codec* codec, Codec_Frame* frame, OStr
 static Codec_Error      CFrame_Footer_write(Codec* codec, Codec_Frame* frame, OStream* stream);
 #endif // CODEC_ENCODE
 
-static Stream_LenType   CFrame_Header_getLen(Codec* codec, Codec_Frame* frame);
-static Codec_LayerImpl* CFrame_Header_getUpperLayer(Codec* codec, Codec_Frame* frame);
+static Stream_LenType   CFrame_Header_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
+static Codec_LayerImpl* CFrame_Header_nextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
-static Stream_LenType   CFrame_Data_getLen(Codec* codec, Codec_Frame* frame);
-static Codec_LayerImpl* CFrame_Data_getUpperLayer(Codec* codec, Codec_Frame* frame);
+static Stream_LenType   CFrame_Data_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
+static Codec_LayerImpl* CFrame_Data_nextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
-static Stream_LenType   CFrame_Footer_getLen(Codec* codec, Codec_Frame* frame);
-static Codec_LayerImpl* CFrame_Footer_getUpperLayer(Codec* codec, Codec_Frame* frame);
+static Stream_LenType   CFrame_Footer_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
+static Codec_LayerImpl* CFrame_Footer_nextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
 static const Codec_LayerImpl CFRAME_HEADER_IMPL = {
 #if CODEC_DECODE
@@ -1366,7 +1366,7 @@ static const Codec_LayerImpl CFRAME_HEADER_IMPL = {
     CFrame_Header_write,
 #endif
     CFrame_Header_getLen,
-    CFrame_Header_getUpperLayer,
+    CFrame_Header_nextLayer,
 };
 
 static const Codec_LayerImpl CFRAME_DATA_IMPL = {
@@ -1377,7 +1377,7 @@ static const Codec_LayerImpl CFRAME_DATA_IMPL = {
     CFrame_Data_write,
 #endif
     CFrame_Data_getLen,
-    CFrame_Data_getUpperLayer,
+    CFrame_Data_nextLayer,
 };
 
 static const Codec_LayerImpl CFRAME_FOOTER_IMPL = {
@@ -1388,7 +1388,7 @@ static const Codec_LayerImpl CFRAME_FOOTER_IMPL = {
     CFrame_Footer_write,
 #endif
     CFrame_Footer_getLen,
-    CFrame_Footer_getUpperLayer,
+    CFrame_Footer_nextLayer,
 };
 
 #if CODEC_DECODE
@@ -1422,24 +1422,24 @@ static Codec_Error      CFrame_Footer_write(Codec* codec, Codec_Frame* frame, OS
 }
 #endif // CODEC_ENCODE
 
-static Stream_LenType   CFrame_Header_getLen(Codec* codec, Codec_Frame* frame) {
+static Stream_LenType   CFrame_Header_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return sizeof(CFrame_Header);
 }
-static Codec_LayerImpl* CFrame_Header_getUpperLayer(Codec* codec, Codec_Frame* frame) {
+static Codec_LayerImpl* CFrame_Header_nextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return (Codec_LayerImpl*) &CFRAME_DATA_IMPL;
 }
 
-static Stream_LenType   CFrame_Data_getLen(Codec* codec, Codec_Frame* frame) {
+static Stream_LenType   CFrame_Data_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return ((CFrame*) frame)->Header.PacketSize;
 }
-static Codec_LayerImpl* CFrame_Data_getUpperLayer(Codec* codec, Codec_Frame* frame) {
+static Codec_LayerImpl* CFrame_Data_nextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return (Codec_LayerImpl*) &CFRAME_FOOTER_IMPL;
 }
 
-static Stream_LenType   CFrame_Footer_getLen(Codec* codec, Codec_Frame* frame) {
+static Stream_LenType   CFrame_Footer_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return sizeof(uint32_t);
 }
-static Codec_LayerImpl* CFrame_Footer_getUpperLayer(Codec* codec, Codec_Frame* frame) {
+static Codec_LayerImpl* CFrame_Footer_nextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return CODEC_LAYER_NULL;
 }
 

@@ -22,38 +22,38 @@ typedef struct {
 // Header Impl functions
 Codec_Error Frame_parseHeader(Codec* codec, Codec_Frame* frame, IStream* stream);
 Codec_Error Frame_writeHeader(Codec* codec, Codec_Frame* frame, OStream* stream);
-Stream_LenType Frame_getHeaderLen(Codec* codec, Codec_Frame* frame);
-Codec_LayerImpl* Frame_getHeaderUpperLayer(Codec* codec, Codec_Frame* frame);
+Stream_LenType Frame_getHeaderLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
+Codec_LayerImpl* Frame_getHeaderNextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 // Data Impl functions
 Codec_Error Frame_parseData(Codec* codec, Codec_Frame* frame, IStream* stream);
 Codec_Error Frame_writeData(Codec* codec, Codec_Frame* frame, OStream* stream);
-Stream_LenType Frame_getDatatSize(Codec* codec, Codec_Frame* frame);
-Codec_LayerImpl* Frame_getDataUpperLayer(Codec* codec, Codec_Frame* frame);
+Stream_LenType Frame_getDataSize(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
+Codec_LayerImpl* Frame_getDataNextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 // Footer Impl functions
 Codec_Error Frame_parseFooter(Codec* codec, Codec_Frame* frame, IStream* stream);
 Codec_Error Frame_writeFooter(Codec* codec, Codec_Frame* frame, OStream* stream);
-Stream_LenType Frame_getFooterLen(Codec* codec, Codec_Frame* frame);
-Codec_LayerImpl* Frame_getFooterUpperLayer(Codec* codec, Codec_Frame* frame);
+Stream_LenType Frame_getFooterLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
+Codec_LayerImpl* Frame_getFooterNextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
 
 const Codec_LayerImpl FRAME_LAYER_HEADER = {
     Frame_parseHeader,
     Frame_writeHeader,
     Frame_getHeaderLen,
-    Frame_getHeaderUpperLayer,
+    Frame_getHeaderNextLayer,
 };
 
 const Codec_LayerImpl FRAME_LAYER_DATA = {
     Frame_parseData,
     Frame_writeData,
-    Frame_getDatatSize,
-    Frame_getDataUpperLayer,
+    Frame_getDataSize,
+    Frame_getDataNextLayer,
 };
 const Codec_LayerImpl FRAME_LAYER_FOOTER = {
     Frame_parseFooter,
     Frame_writeFooter,
     Frame_getFooterLen,
-    Frame_getFooterUpperLayer,
+    Frame_getFooterNextLayer,
 };
 
 // Frame on decode callback
@@ -131,10 +131,10 @@ Codec_Error Frame_writeHeader(Codec* codec, Codec_Frame* frame, OStream* stream)
 
     return CODEC_OK;
 }
-Stream_LenType Frame_getHeaderLen(Codec* codec, Codec_Frame* frame) {
+Stream_LenType Frame_getHeaderLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return 8;
 }
-Codec_LayerImpl* Frame_getHeaderUpperLayer(Codec* codec, Codec_Frame* frame) {
+Codec_LayerImpl* Frame_getHeaderNextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return &FRAME_LAYER_DATA;
 }
 /************************************** Data Impl *************************************************/
@@ -154,10 +154,10 @@ Codec_Error Frame_writeData(Codec* codec, Codec_Frame* frame, OStream* stream) {
 
     return CODEC_OK;
 }
-Stream_LenType Frame_getDatatSize(Codec* codec, Codec_Frame* frame) {
+Stream_LenType Frame_getDataSize(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return ((Frame*) frame)->Header.PacketSize;
 }
-Codec_LayerImpl* Frame_getDataUpperLayer(Codec* codec, Codec_Frame* frame) {
+Codec_LayerImpl* Frame_getDataNextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return &FRAME_LAYER_FOOTER;
 }
 /************************************** Footer Impl *************************************************/
@@ -171,10 +171,10 @@ Codec_Error Frame_writeFooter(Codec* codec, Codec_Frame* frame, OStream* stream)
 
     return CODEC_OK;
 }
-Stream_LenType Frame_getFooterLen(Codec* codec, Codec_Frame* frame) {
+Stream_LenType Frame_getFooterLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return 4;
 }
-Codec_LayerImpl* Frame_getFooterUpperLayer(Codec* codec, Codec_Frame* frame) {
+Codec_LayerImpl* Frame_getFooterNextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return CODEC_LAYER_NULL;
 }
 

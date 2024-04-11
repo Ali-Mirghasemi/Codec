@@ -4,6 +4,12 @@
     #define NULL          ((void*) 0)
 #endif
 
+#if CODEC_SUPPORT_NEXT_LAYER_NULL
+    #define __nextLayer(C, F, L, P)             (L)->nextLayer ? (L)->nextLayer((C), (F), (P)) : CODEC_LAYER_NULL
+#else
+    #define __nextLayer(C, F, L, P)             (L)->nextLayer((C), (F), (P))
+#endif
+
 /**
  * @brief initialize codec
  *
@@ -54,12 +60,12 @@ void Codec_init(Codec* codec, Codec_LayerImpl* baseLayer) {
  * @param frame
  * @return Stream_LenType
  */
-Stream_LenType Codec_frameSize(Codec* codec, Codec_Frame* frame) {
+Stream_LenType Codec_frameSize(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     Codec_LayerImpl* layer = codec->BaseLayer;
     uint32_t size = 0;
     while (layer) {
-        size += layer->getLen(codec, frame);
-        layer = layer->nextLayer(codec, frame);
+        size += layer->getLen(codec, frame, phase);
+        layer = __nextLayer(codec, frame, layer, phase);
     }
     return size;
 }
@@ -149,7 +155,7 @@ Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, IStream* stream
     IStream lock;
     Stream_LenType layerLen;
 
-    layerLen = layer->getLen(codec, frame);
+    layerLen = layer->getLen(codec, frame, Codec_Phase_Decode);
     while (IStream_available(stream) >= layerLen) {
     #if CODEC_DECODE_SYNC
         if (layer == codec->BaseLayer && codec->sync) {
@@ -191,7 +197,7 @@ Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, IStream* stream
         #endif
             // unlock stream
             IStream_unlock(stream, &lock);
-            if((layer = layer->nextLayer(codec, frame)) == CODEC_LAYER_NULL) {
+            if ((layer = __nextLayer(codec, frame, layer, Codec_Phase_Decode)) == CODEC_LAYER_NULL) {
             #if CODEC_DECODE_CALLBACK
                 // frame received
                 if (codec->onDecode) {
@@ -203,7 +209,7 @@ Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, IStream* stream
             }
         }
         // get layer len
-        layerLen = layer->getLen(codec, frame);
+        layerLen = layer->getLen(codec, frame, Codec_Phase_Decode);
     }
 
     return status;
@@ -231,7 +237,7 @@ void Codec_decode(Codec* codec, IStream* stream) {
     Codec_Error error;
     Stream_LenType layerLen;
 
-    layerLen = codec->RxLayer->getLen(codec, frame);
+    layerLen = codec->RxLayer->getLen(codec, frame, Codec_Phase_Decode);
     while (IStream_available(stream) >= layerLen) {
     #if CODEC_DECODE_SYNC
         if (codec->RxLayer == codec->BaseLayer && codec->sync) {
@@ -275,7 +281,8 @@ void Codec_decode(Codec* codec, IStream* stream) {
         #endif
             // unlock stream
             IStream_unlock(stream, &lock);
-            if((codec->RxLayer = codec->RxLayer->nextLayer(codec, frame)) == CODEC_LAYER_NULL) {
+            if ((codec->RxLayer = __nextLayer(codec, frame, codec->RxLayer, Codec_Phase_Decode)) == CODEC_LAYER_NULL
+            ) {
                 // frame received
             #if CODEC_DECODE_CALLBACK
                 if (codec->onDecode) {
@@ -291,7 +298,7 @@ void Codec_decode(Codec* codec, IStream* stream) {
             }
         }
         // get layer len
-        layerLen = codec->RxLayer->getLen(codec, frame);
+        layerLen = codec->RxLayer->getLen(codec, frame, Codec_Phase_Decode);
     }
 }
 #endif // CODEC_DECODE_ASYNC
@@ -351,7 +358,7 @@ Codec_Status Codec_encodeFrame(Codec* codec, Codec_Frame* frame, OStream* stream
     Codec_Error error;
 
     while (layer != CODEC_LAYER_NULL &&
-            (layerLen = layer->getLen(codec, frame)) <= OStream_space(stream)) {
+            (layerLen = layer->getLen(codec, frame, Codec_Phase_Encode)) <= OStream_space(stream)) {
         OStream_lock(stream, &lock, layerLen);
         if((error = layer->write(codec, frame, &lock)) != CODEC_OK) {
         #if CODEC_ENCODE_ERROR
@@ -376,7 +383,7 @@ Codec_Status Codec_encodeFrame(Codec* codec, Codec_Frame* frame, OStream* stream
             if (Codec_EncodeMode_FlushLayer == mode) {
                 OStream_flush(stream);
             }
-            layer = layer->nextLayer(codec, frame);
+            layer = __nextLayer(codec, frame, layer, Codec_Phase_Encode);
         }
     }
 
@@ -433,7 +440,7 @@ void Codec_encode(Codec* codec, OStream* stream) {
     Stream_LenType layerLen;
 
     while (codec->TxLayer != CODEC_LAYER_NULL &&
-            (layerLen = codec->TxLayer->getLen(codec, frame)) <= OStream_space(stream)) {
+            (layerLen = codec->TxLayer->getLen(codec, frame, Codec_Phase_Encode)) <= OStream_space(stream)) {
         OStream_lock(stream, &lock, layerLen);
         if((error = codec->TxLayer->write(codec, frame, &lock)) != CODEC_OK) {
         #if CODEC_ENCODE_ERROR
@@ -461,7 +468,7 @@ void Codec_encode(Codec* codec, OStream* stream) {
             if (Codec_EncodeMode_FlushLayer == codec->EncodeMode) {
                 OStream_flush(stream);
             }
-            codec->TxLayer = codec->TxLayer->nextLayer(codec, frame);
+            codec->TxLayer = __nextLayer(codec, frame, codec->TxLayer, Codec_Phase_Encode);
         }
     }
 
@@ -500,3 +507,18 @@ void Codec_setFreeStream(Codec* codec, uint8_t enabled) {
 void Codec_setDecodeAll(Codec* codec, uint8_t enabled) {
     codec->DecodeAll = enabled != 0;
 }
+
+#if !CODEC_SUPPORT_NEXT_LAYER_NULL
+/**
+ * @brief return next layer of packet, return null if it's last layer
+ * 
+ * @param codec 
+ * @param frame 
+ * @param phase 
+ * @return Codec_LayerImpl* 
+ */
+Codec_LayerImpl* Codec_endLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
+    return CODEC_LAYER_NULL;
+}
+#endif
+

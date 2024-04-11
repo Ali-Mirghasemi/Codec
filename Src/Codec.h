@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 #define CODEC_VER_MAJOR    0
-#define CODEC_VER_MINOR    4
+#define CODEC_VER_MINOR    5
 #define CODEC_VER_FIX      0
 
 #include <stdint.h>
@@ -37,6 +37,10 @@ extern "C" {
  * @brief enable decode feature
  */
 #define CODEC_DECODE                            1
+/**
+ * @brief enable next layer null feature, this feature allow you to set null as last layer function
+ */
+#define CODEC_SUPPORT_NEXT_LAYER_NULL           1
 
 /* Codec Encode Options */
 #if CODEC_ENCODE
@@ -154,7 +158,7 @@ typedef uint16_t Codec_LayerIndex;
 /**
  * @brief return null when it's last layer
  */
-#define CODEC_LAYER_NULL        ((Codec_LayerImpl*) 0)
+#define CODEC_LAYER_NULL        ((void*) 0)
 
 /* Pre-define data types */
 struct __Codec;
@@ -165,6 +169,15 @@ struct __Codec_EncodeQueue;
 typedef struct __Codec_EncodeQueue Codec_EncodeQueue;
 struct __Codec_DecodeQueue;
 typedef struct __Codec_DecodeQueue Codec_DecodeQueue;
+
+/**
+ * @brief codec phase
+ */
+typedef enum {
+    Codec_Phase_Encode,
+    Codec_Phase_Decode,
+} Codec_Phase;
+
 #if CODEC_DECODE
 /**
  * @brief this function parse layer from input stream
@@ -180,11 +193,11 @@ typedef Codec_Error (*Codec_WriteFn)(Codec* codec, Codec_Frame* frame, OStream* 
 /**
  * @brief this function return size of layer in bytes
  */
-typedef Stream_LenType (*Codec_GetLenFn)(Codec* codec, Codec_Frame* frame);
+typedef Stream_LenType (*Codec_GetLenFn)(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 /**
  * @brief this function return next or upper layer of packet, return null if it's last layer
  */
-typedef Codec_LayerImpl* (*Codec_NextLayerFn)(Codec* codec, Codec_Frame* frame);
+typedef Codec_LayerImpl* (*Codec_NextLayerFn)(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 /**
  * @brief this function is called when codec decode/encode a frame completed
  */
@@ -269,7 +282,7 @@ struct __Codec {
 };
 
 void Codec_init(Codec* codec, Codec_LayerImpl* baseLayer);
-Stream_LenType Codec_frameSize(Codec* codec, Codec_Frame* frame);
+Stream_LenType Codec_frameSize(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
 #if CODEC_ARGS
     void  Codec_setArgs(Codec* codec, void* args);
@@ -340,6 +353,11 @@ void Codec_setDecodeAll(Codec* codec, uint8_t enabled);
     #define CODEC_LAYER_IMPL(parse, write, getLen, nextLayer) { .write = write, .getLen = getLen, .nextLayer = nextLayer }
 #endif
 
+#if CODEC_SUPPORT_NEXT_LAYER_NULL
+    #define Codec_endLayer             CODEC_LAYER_NULL
+#else
+    Codec_LayerImpl* Codec_endLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
+#endif
 
 #ifdef __cplusplus
 };
