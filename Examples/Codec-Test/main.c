@@ -1402,8 +1402,7 @@ static Codec_Error      CFrame_Data_parse(Codec* codec, Codec_Frame* frame, IStr
     return CODEC_OK;
 }
 static Codec_Error      CFrame_Footer_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
-    IStream_readUInt32(stream) == 0xABCD1234;
-    return CODEC_OK;
+    return IStream_readUInt32(stream) != 0xABCD1234;
 }
 #endif // CODEC_DECODE
 
@@ -1419,6 +1418,7 @@ static Codec_Error      CFrame_Data_write(Codec* codec, Codec_Frame* frame, OStr
 }
 static Codec_Error      CFrame_Footer_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
     OStream_writeUInt32(stream, 0xABCD1234);
+    return CODEC_OK;
 }
 #endif // CODEC_ENCODE
 
