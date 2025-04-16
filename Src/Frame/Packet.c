@@ -26,14 +26,14 @@ static Codec_Error      Packet_Data_write(Codec* codec, Codec_Frame* frame, OStr
 static Codec_Error      Packet_Footer_write(Codec* codec, Codec_Frame* frame, OStream* stream);
 #endif // CODEC_ENCODE
 
-static Stream_LenType   Packet_Header_getLen(Codec* codec, Codec_Frame* frame);
-static Codec_LayerImpl* Packet_Header_getUpperLayer(Codec* codec, Codec_Frame* frame);
+static Stream_LenType   Packet_Header_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
+static Codec_LayerImpl* Packet_Header_getUpperLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
-static Stream_LenType   Packet_Data_getLen(Codec* codec, Codec_Frame* frame);
-static Codec_LayerImpl* Packet_Data_getUpperLayer(Codec* codec, Codec_Frame* frame);
+static Stream_LenType   Packet_Data_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
+static Codec_LayerImpl* Packet_Data_getUpperLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
-static Stream_LenType   Packet_Footer_getLen(Codec* codec, Codec_Frame* frame);
-static Codec_LayerImpl* Packet_Footer_getUpperLayer(Codec* codec, Codec_Frame* frame);
+static Stream_LenType   Packet_Footer_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
+static Codec_LayerImpl* Packet_Footer_getUpperLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
 static const Codec_LayerImpl PACKET_HEADER_IMPL = {
 #if CODEC_DECODE
@@ -149,25 +149,25 @@ static Codec_Error Packet_Footer_write(Codec* codec, Codec_Frame* frame, OStream
 #endif // CODEC_ENCODE
 
 
-static Stream_LenType Packet_Header_getLen(Codec* codec, Codec_Frame* frame) {
+static Stream_LenType Packet_Header_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return PACKET_HEADER_SIZE;
 }
-static Codec_LayerImpl* Packet_Header_getUpperLayer(Codec* codec, Codec_Frame* frame) {
+static Codec_LayerImpl* Packet_Header_getUpperLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return (Codec_LayerImpl*) &PACKET_DATA_IMPL;
 }
 
-static Stream_LenType Packet_Data_getLen(Codec* codec, Codec_Frame* frame) {
+static Stream_LenType Packet_Data_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     Packet* p = (Packet*) frame;
     return p->Len;
 }
-static Codec_LayerImpl* Packet_Data_getUpperLayer(Codec* codec, Codec_Frame* frame) {
+static Codec_LayerImpl* Packet_Data_getUpperLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return (Codec_LayerImpl*) &PACKET_FOOTER_IMPL;
 }
 
-static Stream_LenType Packet_Footer_getLen(Codec* codec, Codec_Frame* frame) {
+static Stream_LenType Packet_Footer_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return PACKET_FOOTER_SIZE;
 }
-static Codec_LayerImpl* Packet_Footer_getUpperLayer(Codec* codec, Codec_Frame* frame) {
+static Codec_LayerImpl* Packet_Footer_getUpperLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
     return CODEC_LAYER_NULL;
 }
 
