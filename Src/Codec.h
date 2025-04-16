@@ -127,7 +127,7 @@ typedef uint16_t Codec_LayerIndex;
 #if CODEC_ENCODE
     #include "OutputStream.h"
 
-#if !OSTREAM_LOCK
+#if !STREAM_WRITE_LOCK
     #error "Codec Library use OSTREAM_LOCK, you must enable it"
 #endif
 #endif // CODEC_ENCODE
@@ -135,7 +135,7 @@ typedef uint16_t Codec_LayerIndex;
 #if CODEC_DECODE
     #include "InputStream.h"
 
-#if !ISTREAM_LOCK
+#if !STREAM_READ_LOCK
     #error "Codec Library use ISTREAM_LOCK, you must enable it"
 #endif
 #endif // CODEC_DECODE
