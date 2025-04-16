@@ -1,5 +1,7 @@
 .vscode/
 *.depend
-Examples/Simple/bin/
+Examples/*/bin/
 *.o
 *.layout
+*.exe
+*.map
