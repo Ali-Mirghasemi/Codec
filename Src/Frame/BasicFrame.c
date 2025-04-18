@@ -17,24 +17,24 @@ static Stream_LenType   BasicFrame_Data_getLen(Codec* codec, Codec_Frame* frame,
 
 static const Codec_LayerImpl BASIC_FRAME_HEADER_IMPL = {
 #if CODEC_DECODE
-    BasicFrame_Header_parse,
+    .parse = BasicFrame_Header_parse,
 #endif
 #if CODEC_ENCODE
-    BasicFrame_Header_write,
+    .write = BasicFrame_Header_write,
 #endif
-    BasicFrame_Header_getLen,
-    BasicFrame_Header_nextLayer,
+    .getLen = BasicFrame_Header_getLen,
+    .nextLayer = BasicFrame_Header_nextLayer,
 };
 
 static const Codec_LayerImpl BASIC_FRAME_DATA_IMPL = {
 #if CODEC_DECODE
-    BasicFrame_Data_parse,
+    .parse = BasicFrame_Data_parse,
 #endif
 #if CODEC_ENCODE
-    BasicFrame_Data_write,
+    .write = BasicFrame_Data_write,
 #endif
-    BasicFrame_Data_getLen,
-    Codec_endLayer,
+    .getLen = BasicFrame_Data_getLen,
+    .nextLayer = Codec_endLayer,
 };
 
 /**
