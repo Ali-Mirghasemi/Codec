@@ -98,6 +98,8 @@ if (${LIB_NAME_UPPER}_BUILD_SHARED_LIB)
     )
     install(TARGETS ${SHARED_TARGET}
         PUBLIC_HEADER DESTINATION include
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
     )
     # Enable automatic symbol export on Windows
     if(WIN32)
@@ -118,13 +120,18 @@ if (${LIB_NAME_UPPER}_BUILD_STATIC_LIB)
         set(STATIC_TARGET ${LIB_NAME}-Static)
     endif()
     add_library(${LIB_NAME}::Static ALIAS ${STATIC_TARGET})
-    target_include_directories(${STATIC_TARGET} PUBLIC ${LIBRARY_SRC_DIR})
+    target_include_directories(${STATIC_TARGET} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Src>
+        $<INSTALL_INTERFACE:include>
+    )
     target_compile_features(${STATIC_TARGET} PUBLIC c_std_99)
     set_target_properties(${STATIC_TARGET} PROPERTIES
         PUBLIC_HEADER "${LIBRARY_HEADERS}"
     )
     install(TARGETS ${STATIC_TARGET}
         PUBLIC_HEADER DESTINATION include
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
     )
 endif()
 
@@ -187,6 +194,7 @@ install(DIRECTORY ${LIBRARY_SRC_DIR}/
 install(
     TARGETS ${SHARED_TARGET} ${STATIC_TARGET}
     EXPORT ${LIB_NAME}Targets
+    PUBLIC_HEADER DESTINATION include
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
