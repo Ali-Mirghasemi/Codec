@@ -16,7 +16,8 @@
 #define CODEC_BEGIN(...)                        Codec_Error err = CODEC_OK; \
                                                 MACRO_FOR(MACRO_DUMMY, __VA_ARGS__)
 
-#define CODEC_END()                             (void) err; \
+#define CODEC_END(...)                          (void) err; \
+                                                MACRO_FOR(MACRO_DUMMY, __VA_ARGS__) \
                                                 return err
 
 // -------------------------------------- Write APIs -------------------------------------
@@ -78,21 +79,23 @@
     FN_PREFIX Codec_Error NAME(Codec* codec, Codec_Frame* __frame, StreamOut* stream) { \
         CODEC_BEGIN(PACKET_TYPE* frame = (PACKET_TYPE*) __frame); \
         MACRO_FOR_MAP((CODEC_WRITE_RAW, CODEC_WRITE_TYPE, CODEC_WRITE_VAL, CODEC_WRITE_NONE), __VA_ARGS__); \
-        CODEC_END(); \
+        CODEC_END((void) frame; ); \
     }
 
 #define CODEC_IMPL_DECODE(NAME, FN_PREFIX, PACKET_TYPE, ...) \
     FN_PREFIX Codec_Error NAME(Codec* codec, Codec_Frame* __frame, StreamIn* stream) { \
         CODEC_BEGIN(PACKET_TYPE* frame = (PACKET_TYPE*) __frame); \
         MACRO_FOR_MAP((CODEC_READ_RAW, CODEC_READ_TYPE, CODEC_READ_VAL, CODEC_READ_NONE), __VA_ARGS__); \
-        CODEC_END(); \
+        CODEC_END((void) frame; ); \
     }
 
 #define CODEC_IMPL_GET_LEN(NAME, FN_PREFIX, PACKET_TYPE, ...) \
     FN_PREFIX Stream_LenType NAME(Codec* codec, Codec_Frame* __frame, Codec_Phase phase) { \
-        CODEC_BEGIN(PACKET_TYPE* frame = (PACKET_TYPE*) __frame; , Stream_LenType len = 0); \
-        MACRO_FOR_MAP((CODEC_IMPL_LEN_3, CODEC_IMPL_LEN_2, CODEC_IMPL_LEN_1, CODEC_IMPL_LEN_0), __VA_ARGS__) \
-        CODEC_END(); \
+        PACKET_TYPE* frame = (PACKET_TYPE*) __frame; \
+        Stream_LenType len = 0; \
+        MACRO_FOR_MAP((CODEC_IMPL_LEN_3, CODEC_IMPL_LEN_2, CODEC_IMPL_LEN_1, CODEC_IMPL_LEN_0), __VA_ARGS__); \
+        (void) frame; \
+        return len; \
     }
 
 #define CODEC_IMPL_LAYER_OBJ(NAME, OBJ_PREFIX, NEXT_LAYER, ...) \

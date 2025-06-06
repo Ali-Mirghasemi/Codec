@@ -104,7 +104,7 @@ static Codec_Error Packet_Header_parse(Codec* codec, Codec_Frame* frame, IStream
 }
 static Codec_Error Packet_Data_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
     Packet* p = (Packet*) frame;
-    if (IStream_available(stream) < p->Len) {
+    if (IStream_available(stream) < (Stream_LenType) p->Len) {
         return (Codec_Error) Packet_Error_Data;
     }
     if (p->Data == NULL) {
