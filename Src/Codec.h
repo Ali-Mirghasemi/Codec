@@ -41,6 +41,10 @@ extern "C" {
  * @brief enable next layer null feature, this feature allow you to set null as last layer function
  */
 #define CODEC_SUPPORT_NEXT_LAYER_NULL           1
+/**
+ * @brief This feature enable helper macros for codec library and need `Macro` library
+ */
+#define CODEC_SUPPORT_MACRO                     1
 
 /* Codec Encode Options */
 #if CODEC_ENCODE
@@ -140,6 +144,9 @@ typedef uint16_t Codec_LayerIndex;
 #endif
 #endif // CODEC_DECODE
 
+#if CODEC_SUPPORT_MACRO
+    #include "CodecMacro.h"
+#endif // CODEC_SUPPORT_MACRO
 
 #define __CODEC_VER_STR(major, minor, fix)     #major "." #minor "." #fix
 #define _CODEC_VER_STR(major, minor, fix)      __CODEC_VER_STR(major, minor, fix)
@@ -155,6 +162,10 @@ typedef uint16_t Codec_LayerIndex;
  * @brief return ok of parse was successful
  */
 #define CODEC_OK                ((Codec_Error) 0)
+/**
+ * @brief return base stream errors
+ */
+#define CODEC_ERROR_STREAM      ((Codec_Error) 0x1000)
 /**
  * @brief return null when it's last layer
  */
