@@ -19,41 +19,55 @@
 #define CODEC_END()                             (void) err; \
                                                 return err
 
+// -------------------------------------- Write APIs -------------------------------------
+#define CODEC_WRITE(...)                        MACRO_FN_MAP((CODEC_WRITE_RAW, CODEC_WRITE_TYPE, CODEC_WRITE_VAL, CODEC_WRITE_NONE), __VA_ARGS__)
+
+#define CODEC_WRITE_NONE()
+
 #define CODEC_WRITE_VAL(VAL)                    err = OStream_write(stream, (uint8_t*) &(VAL), sizeof(VAL)); \
                                                 if (err != Stream_Ok) { \
                                                     return err | CODEC_ERROR_STREAM; \
                                                 }
 
-#define CODEC_WRITE(TYPE, ...)                  err = OStream_write ##TYPE(stream, __VA_ARGS__); \
+#define CODEC_WRITE_TYPE(TYPE, VAL)             err = OStream_write ##TYPE(stream, (VAL)); \
                                                 if (err != Stream_Ok) { \
                                                     return err | CODEC_ERROR_STREAM; \
                                                 }
 
-#define CODEC_READ_VAL(VAL)                     err = OStream_read(stream, (uint8_t*) &(VAL), sizeof(VAL)); \
+#define CODEC_WRITE_RAW(TYPE, VAL, LEN)         err = OStream_write(stream, (uint8_t*) (VAL), (LEN)); \
+                                                if (err != Stream_Ok) { \
+                                                    return err | CODEC_ERROR_STREAM; \
+                                                }
+
+// -------------------------------------- Read APIs -------------------------------------
+#define CODEC_READ(...)                         MACRO_FN_MAP((CODEC_READ_RAW, CODEC_READ_TYPE, CODEC_READ_VAL, CODEC_READ_NONE), __VA_ARGS__)
+
+#define CODEC_READ_NONE()
+
+#define CODEC_READ_VAL(VAL)                     err = IStream_read(stream, (uint8_t*) &(VAL), sizeof(VAL)); \
                                                 if (err != Stream_Ok) { \
                                                     return err | CODEC_ERROR_STREAM; \
                                                 }                                        
 
-
-#define CODEC_READ(TYPE, ...)                   err = OStream_read ##TYPE ##Safe(stream, __VA_ARGS__); \
+#define CODEC_READ_TYPE(TYPE, VAL)              err = IStream_read ##TYPE ##Safe(stream, (VAL)); \
                                                 if (err != Stream_Ok) { \
                                                     return err | CODEC_ERROR_STREAM; \
-                                                }                                        
+                                                }
 
-#define CODEC_VALUE_LEN(TYPE)                   len += sizeof(STREAM_VALUE_TYPE(TYPE))
-#define CODEC_VALUE_ARR_LEN(TYPE, LEN)          len += sizeof(STREAM_VALUE_TYPE(TYPE)) * (LEN)
+#define CODEC_READ_RAW(TYPE, VAL, LEN)          err = IStream_read(stream, (uint8_t*) (VAL), (LEN)); \
+                                                if (err != Stream_Ok) { \
+                                                    return err | CODEC_ERROR_STREAM; \
+                                                }                                                                                                                      
+
+// -------------------------------------- Length APIs -------------------------------------
+#define CODEC_VALUE_LEN(...)                    MACRO_FN_MAP((CODEC_VALUE_LEN_ARR, CODEC_VALUE_LEN_TYPE, CODEC_VALUE_LEN_VAL, CODEC_VALUE_LEN_NONE), __VA_ARGS__)
+
+#define CODEC_VALUE_LEN_NONE()
+#define CODEC_VALUE_LEN_VAL(VAL)                sizeof(VAL)
+#define CODEC_VALUE_LEN_TYPE(TYPE, VAL)         sizeof(STREAM_VALUE_TYPE(TYPE))
+#define CODEC_VALUE_LEN_ARR(TYPE, VAL, LEN)     sizeof(STREAM_VALUE_TYPE(TYPE)) * (LEN)
     
 // ------------------------------------ Implementation Macros ----------------------------------
-
-#define CODEC_IMPL_WRITE_0()             
-#define CODEC_IMPL_WRITE_0(VAL)                 CODEC_WRITE_VAL(VAL);
-#define CODEC_IMPL_WRITE_1(TYPE, VAL)           CODEC_WRITE(TYPE, VAL);
-#define CODEC_IMPL_WRITE_2(TYPE, VAL, LEN)      CODEC_WRITE(TYPE, VAL, LEN);
-
-#define CODEC_IMPL_READ_0()                     
-#define CODEC_IMPL_READ_1(VAL)                  CODEC_READ_VAL(TYPE);
-#define CODEC_IMPL_READ_2(TYPE, VAL)            CODEC_READ(TYPE, VAL);
-#define CODEC_IMPL_READ_3(TYPE, VAL, LEN)       CODEC_READ(TYPE, VAL, LEN);
 
 #define CODEC_IMPL_LEN_0(TYPE)                  
 #define CODEC_IMPL_LEN_1(VAL)                   len += sizeof(VAL);
@@ -61,22 +75,22 @@
 #define CODEC_IMPL_LEN_3(TYPE, VAL, LEN)        len += sizeof(STREAM_VALUE_TYPE(TYPE)) * LEN;
 
 #define CODEC_IMPL_ENCODE(NAME, FN_PREFIX, PACKET_TYPE, ...) \
-    FN_PREFIX Codec_Error NAME(Codec* codec, Codec_Frame* __frame, OStream* stream, Codec_EncodeMode mode) { \
+    FN_PREFIX Codec_Error NAME(Codec* codec, Codec_Frame* __frame, StreamOut* stream) { \
         CODEC_BEGIN(PACKET_TYPE* frame = (PACKET_TYPE*) __frame); \
-        MACRO_FOR_MAP((CODEC_IMPL_WRITE_2, CODEC_IMPL_WRITE_1, CODEC_IMPL_WRITE_0, CODEC_IMPL_WRITE_0), __VA_ARGS__) \
+        MACRO_FOR_MAP((CODEC_WRITE_RAW, CODEC_WRITE_TYPE, CODEC_WRITE_VAL, CODEC_WRITE_NONE), __VA_ARGS__); \
         CODEC_END(); \
     }
 
 #define CODEC_IMPL_DECODE(NAME, FN_PREFIX, PACKET_TYPE, ...) \
-    FN_PREFIX Codec_Error NAME(Codec* codec, Codec_Frame* __frame, IStream* stream) { \
+    FN_PREFIX Codec_Error NAME(Codec* codec, Codec_Frame* __frame, StreamIn* stream) { \
         CODEC_BEGIN(PACKET_TYPE* frame = (PACKET_TYPE*) __frame); \
-        MACRO_FOR_MAP((CODEC_IMPL_READ_3, CODEC_IMPL_READ_2, CODEC_IMPL_READ_1, CODEC_IMPL_READ_0), __VA_ARGS__) \
+        MACRO_FOR_MAP((CODEC_READ_RAW, CODEC_READ_TYPE, CODEC_READ_VAL, CODEC_READ_NONE), __VA_ARGS__); \
         CODEC_END(); \
     }
 
 #define CODEC_IMPL_GET_LEN(NAME, FN_PREFIX, PACKET_TYPE, ...) \
     FN_PREFIX Stream_LenType NAME(Codec* codec, Codec_Frame* __frame, Codec_Phase phase) { \
-        CODEC_BEGIN(PACKET_TYPE* frame = (PACKET_TYPE*) __frame; , Stream_LenType len); \
+        CODEC_BEGIN(PACKET_TYPE* frame = (PACKET_TYPE*) __frame; , Stream_LenType len = 0); \
         MACRO_FOR_MAP((CODEC_IMPL_LEN_3, CODEC_IMPL_LEN_2, CODEC_IMPL_LEN_1, CODEC_IMPL_LEN_0), __VA_ARGS__) \
         CODEC_END(); \
     }
