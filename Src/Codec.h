@@ -193,13 +193,13 @@ typedef enum {
 /**
  * @brief this function parse layer from input stream
  */
-typedef Codec_Error (*Codec_ParseFn)(Codec* codec, Codec_Frame* frame, IStream* stream);
+typedef Codec_Error (*Codec_ParseFn)(Codec* codec, Codec_Frame* frame, StreamIn* stream);
 #endif // CODEC_DECODE
 #if CODEC_ENCODE
 /**
  * @brief this function write layer into output stream
  */
-typedef Codec_Error (*Codec_WriteFn)(Codec* codec, Codec_Frame* frame, OStream* stream);
+typedef Codec_Error (*Codec_WriteFn)(Codec* codec, Codec_Frame* frame, StreamOut* stream);
 #endif // CODEC_ENCODE
 /**
  * @brief this function return size of layer in bytes
@@ -220,7 +220,7 @@ typedef void (*Codec_OnErrorFn)(Codec* codec, Codec_Frame* frame, Codec_LayerImp
 /**
  * @brief this function used to sync frame with stream in decoding
  */
-typedef Stream_LenType (*Codec_SyncFn)(Codec* codec, IStream* stream);
+typedef Stream_LenType (*Codec_SyncFn)(Codec* codec, StreamIn* stream);
 /**
  * @brief decode/encode states
  */
@@ -295,6 +295,8 @@ struct __Codec {
 void Codec_init(Codec* codec, Codec_LayerImpl* baseLayer);
 Stream_LenType Codec_frameSize(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
+#define   Codec_deinit(CODEC)                                           memset((CODEC), 0, sizeof(Codec))
+
 #if CODEC_ARGS
     void  Codec_setArgs(Codec* codec, void* args);
     void* Codec_getArgs(Codec* codec);
@@ -319,11 +321,11 @@ Stream_LenType Codec_frameSize(Codec* codec, Codec_Frame* frame, Codec_Phase pha
     Codec_Status Codec_decodeBuffer(Codec* codec, Codec_Frame* frame, uint8_t* buffer, Stream_LenType size);
 #endif
 
-    Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, IStream* stream);
+    Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, StreamIn* stream);
 
 #if CODEC_DECODE_ASYNC
     void Codec_beginDecode(Codec* codec, Codec_Frame* frame);
-    void Codec_decode(Codec* codec, IStream* stream);
+    void Codec_decode(Codec* codec, StreamIn* stream);
 #endif
 
 #endif
@@ -342,12 +344,12 @@ Stream_LenType Codec_frameSize(Codec* codec, Codec_Frame* frame, Codec_Phase pha
     Codec_Status Codec_encodeBuffer(Codec* codec, Codec_Frame* frame, uint8_t* buffer, Stream_LenType size);
 #endif
 
-    Codec_Status Codec_encodeFrame(Codec* codec, Codec_Frame* frame, OStream* stream, Codec_EncodeMode mode);
+    Codec_Status Codec_encodeFrame(Codec* codec, Codec_Frame* frame, StreamOut* stream, Codec_EncodeMode mode);
 
 #if CODEC_ENCODE_ASYNC
     void Codec_encodeMode(Codec* codec, Codec_EncodeMode mode);
     void Codec_beginEncode(Codec* codec, Codec_Frame* frame, Codec_EncodeMode mode);
-    void Codec_encode(Codec* codec, OStream* stream);
+    void Codec_encode(Codec* codec, StreamOut* stream);
 #endif
 
 #endif

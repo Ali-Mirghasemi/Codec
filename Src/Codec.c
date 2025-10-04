@@ -134,7 +134,7 @@ void Codec_setDecodeSync(Codec* codec, Codec_SyncFn fn) {
  * @return Codec_Status
  */
 Codec_Status Codec_decodeBuffer(Codec* codec, Codec_Frame* frame, uint8_t* buffer, Stream_LenType size) {
-    IStream stream;
+    StreamIn stream;
     IStream_init(&stream, NULL, buffer, size);
     Stream_moveWritePos(&stream.Buffer, size);
     return Codec_decodeFrame(codec, frame, &stream);
@@ -148,11 +148,11 @@ Codec_Status Codec_decodeBuffer(Codec* codec, Codec_Frame* frame, uint8_t* buffe
  * @param frame
  * @return Codec_Status
  */
-Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, IStream* stream) {
+Codec_Status Codec_decodeFrame(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     Codec_LayerImpl* layer = codec->BaseLayer;
     Codec_Error error;
     Codec_Status status = Codec_Status_Error;
-    IStream lock;
+    StreamIn lock;
     Stream_LenType layerLen;
 
     layerLen = layer->getLen(codec, frame, Codec_Phase_Decode);
@@ -231,9 +231,9 @@ void Codec_beginDecode(Codec* codec, Codec_Frame* frame) {
  * @param codec codec to decode
  * @param stream input stream to decode
  */
-void Codec_decode(Codec* codec, IStream* stream) {
+void Codec_decode(Codec* codec, StreamIn* stream) {
     Codec_Frame* frame = codec->RxFrame;
-    IStream lock;
+    StreamIn lock;
     Codec_Error error;
     Stream_LenType layerLen;
 
@@ -337,7 +337,7 @@ void Codec_onEncodeError(Codec* codec, Codec_OnErrorFn fn) {
  * @return Codec_Status
  */
 Codec_Status Codec_encodeBuffer(Codec* codec, Codec_Frame* frame, uint8_t* buffer, Stream_LenType size) {
-    OStream stream;
+    StreamOut stream;
     OStream_init(&stream, NULL, buffer, size);
     return Codec_encodeFrame(codec, frame, &stream, Codec_EncodeMode_Normal);
 }
@@ -350,11 +350,11 @@ Codec_Status Codec_encodeBuffer(Codec* codec, Codec_Frame* frame, uint8_t* buffe
  * @param frame
  * @return Codec_Status
  */
-Codec_Status Codec_encodeFrame(Codec* codec, Codec_Frame* frame, OStream* stream, Codec_EncodeMode mode) {
+Codec_Status Codec_encodeFrame(Codec* codec, Codec_Frame* frame, StreamOut* stream, Codec_EncodeMode mode) {
     Codec_LayerImpl* layer = codec->BaseLayer;
     Stream_LenType layerLen;
     Codec_Status status = Codec_Status_Pending;
-    OStream lock;
+    StreamOut lock;
     Codec_Error error;
 
     while (layer != CODEC_LAYER_NULL &&
@@ -433,9 +433,9 @@ void Codec_beginEncode(Codec* codec, Codec_Frame* frame, Codec_EncodeMode mode) 
  * @param mode encode mode
  * @return Codec_Error
  */
-void Codec_encode(Codec* codec, OStream* stream) {
+void Codec_encode(Codec* codec, StreamOut* stream) {
     Codec_Frame* frame = codec->TxFrame;
-    OStream lock;
+    StreamOut lock;
     Codec_Error error;
     Stream_LenType layerLen;
 
