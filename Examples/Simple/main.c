@@ -72,7 +72,7 @@ int main() {
     OStream out;
     IStream in;
     Codec codec;
-    Codec_init(&codec, &FRAME_LAYER_HEADER);
+    Codec_init(&codec, (Codec_LayerImpl*) &FRAME_LAYER_HEADER);
     Codec_onDecode(&codec, Frame_onDetect);
     Codec_onDecodeError(&codec, Frame_onError);
 
@@ -135,7 +135,7 @@ Stream_LenType Frame_getHeaderLen(Codec* codec, Codec_Frame* frame, Codec_Phase 
     return 8;
 }
 Codec_LayerImpl* Frame_getHeaderNextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
-    return &FRAME_LAYER_DATA;
+    return (Codec_LayerImpl*) &FRAME_LAYER_DATA;
 }
 /************************************** Data Impl *************************************************/
 Codec_Error Frame_parseData(Codec* codec, Codec_Frame* frame, IStream* stream) {
@@ -158,7 +158,7 @@ Stream_LenType Frame_getDataSize(Codec* codec, Codec_Frame* frame, Codec_Phase p
     return ((Frame*) frame)->Header.PacketSize;
 }
 Codec_LayerImpl* Frame_getDataNextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase) {
-    return &FRAME_LAYER_FOOTER;
+    return (Codec_LayerImpl*) &FRAME_LAYER_FOOTER;
 }
 /************************************** Footer Impl *************************************************/
 Codec_Error Frame_parseFooter(Codec* codec, Codec_Frame* frame, IStream* stream) {

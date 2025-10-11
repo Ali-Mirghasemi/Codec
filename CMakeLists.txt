@@ -89,11 +89,20 @@ endif()
 # ============================================================
 set(STREAM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Stream" CACHE PATH "Path to Stream library")
 
-if(EXISTS "${STREAM_DIR}/CMakeLists.txt")
-    message(STATUS "Found local Stream source at: ${STREAM_DIR}")
-    add_subdirectory(${STREAM_DIR} ${CMAKE_BINARY_DIR}/Stream)
-elseif(NOT TARGET Stream::Shared AND NOT TARGET Stream::Static)
-    find_package(Stream CONFIG REQUIRED)
+if(NOT TARGET Stream::Static AND NOT TARGET Stream::Shared)
+    if(EXISTS "${STREAM_DIR}/CMakeLists.txt")
+        # Use unique binary directory per dependency layer
+        get_filename_component(_abs_stream_dir "${STREAM_DIR}" ABSOLUTE)
+        string(MD5 STREAM_HASH "${_abs_stream_dir}")
+        set(_stream_binary_dir "${CMAKE_BINARY_DIR}/Stream_${STREAM_HASH}")
+        message(STATUS "Including local Stream source at: ${STREAM_DIR}")
+        add_subdirectory(${STREAM_DIR} ${_stream_binary_dir})
+    else()
+        message(STATUS "Using installed Stream library (find_package)")
+        find_package(Stream CONFIG REQUIRED)
+    endif()
+else()
+    message(STATUS "Stream already added — skipping re-addition")
 endif()
 
 if(TARGET Stream::Shared)
@@ -110,18 +119,30 @@ endif()
 set(${LIB_NAME_UPPER}_LIB_MACRO FALSE)
 set(MACRO_LOCAL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../Macro")
 
-# Find installed Macro package
+# Try installed package first
 find_package(Macro QUIET)
 
 if(TARGET Macro::HeaderOnly)
     message(STATUS "Using installed Macro header-only library")
     set(${LIB_NAME_UPPER}_LIB_MACRO TRUE)
+
 elseif(EXISTS "${MACRO_LOCAL_PATH}/CMakeLists.txt")
-    message(STATUS "Found local Macro source at: ${MACRO_LOCAL_PATH}")
-    add_subdirectory(${MACRO_LOCAL_PATH} ${CMAKE_BINARY_DIR}/Macro)
+    # Unique binary dir to avoid nested add_subdirectory() conflicts
+    get_filename_component(_abs_macro_path "${MACRO_LOCAL_PATH}" ABSOLUTE)
+    string(MD5 _macro_hash "${_abs_macro_path}")
+    set(_macro_binary_dir "${CMAKE_BINARY_DIR}/Macro_${_macro_hash}")
+
+    if(NOT TARGET Macro::HeaderOnly)
+        message(STATUS "Found local Macro source at: ${MACRO_LOCAL_PATH}")
+        add_subdirectory(${MACRO_LOCAL_PATH} ${_macro_binary_dir})
+    else()
+        message(STATUS "Macro already added — skipping re-addition")
+    endif()
+
     if(TARGET Macro::HeaderOnly)
         set(${LIB_NAME_UPPER}_LIB_MACRO TRUE)
     endif()
+
 else()
     message(STATUS "No Macro library found — building without logging")
 endif()
