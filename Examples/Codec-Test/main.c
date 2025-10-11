@@ -36,17 +36,17 @@ typedef struct {
 // ---------------------------------------------------------------
 
 uint8_t  cycles;
-uint8_t  index;
+uint8_t  assert_index;
 uint32_t errorCode;
 
-uint32_t Assert_Num(int a, int b, uint16_t line, uint8_t cycles, uint8_t index);
-uint32_t Assert_Status(Codec_Status a, Codec_Status b, uint16_t line, uint8_t cycles, uint8_t index);
-uint32_t Assert_Bytes(uint8_t* a, uint8_t* b, int len, uint16_t line, uint8_t cycles, uint8_t index);
-uint32_t Assert_BasicFrame(BasicFrame* a, BasicFrame* b, uint16_t line, uint8_t cycles, uint8_t index);
-uint32_t Assert_CFrame(CFrame* a, CFrame* b, uint16_t line, uint8_t cycles, uint8_t index);
-uint32_t Assert_Packet(Packet* a, Packet* b, uint16_t line, uint8_t cycles, uint8_t index);
+uint32_t Assert_Num(int a, int b, uint16_t line, uint8_t cycles, uint8_t assert_index);
+uint32_t Assert_Status(Codec_Status a, Codec_Status b, uint16_t line, uint8_t cycles, uint8_t assert_index);
+uint32_t Assert_Bytes(uint8_t* a, uint8_t* b, int len, uint16_t line, uint8_t cycles, uint8_t assert_index);
+uint32_t Assert_BasicFrame(BasicFrame* a, BasicFrame* b, uint16_t line, uint8_t cycles, uint8_t assert_index);
+uint32_t Assert_CFrame(CFrame* a, CFrame* b, uint16_t line, uint8_t cycles, uint8_t assert_index);
+uint32_t Assert_Packet(Packet* a, Packet* b, uint16_t line, uint8_t cycles, uint8_t assert_index);
 
-#define assert(TYPE, ...)               if ((errorCode = Assert_ ##TYPE (__VA_ARGS__, __LINE__, cycles, index))) return errorCode;
+#define assert(TYPE, ...)               if ((errorCode = Assert_ ##TYPE (__VA_ARGS__, __LINE__, cycles, assert_index))) return errorCode;
 #define compress(LINE, CYCLE, INDEX)    (((uint32_t) LINE << 16) | ((uint32_t) CYCLE << 8) | ((uint32_t) INDEX))
 #define decompres(RESULT)               RESULT >> 16, (RESULT >> 8) & 0xFF, RESULT & 0xFF
 
@@ -129,13 +129,13 @@ uint32_t Test_Frame_BasicFrame(void) {
 
     #define testBasicFrame(PAT, N)          PRINTF(#PAT " %dx\n", N);\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     BasicFrame_init(&frame, PAT, sizeof(PAT));\
                                                     Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * BasicFrame_len(&frame));\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * BasicFrame_len(&frame));\
                                                 }\
                                                 Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     status = Codec_decodeFrame(&codec, &tempFrame, &istream);\
                                                     assert(Status, status, Codec_Status_Done);\
                                                     assert(BasicFrame, &tempFrame, &frame);\
@@ -219,7 +219,7 @@ uint32_t Test_Buffer_BasicFrame(void) {
     Codec_init(&codec, BasicFrame_baseLayer());
     BasicFrame_init(&tempFrame, tempBuff, sizeof(tempBuff));
 
-    index = 0;
+    assert_index = 0;
 
     testBasicFrame(PAT1);
 
@@ -236,13 +236,13 @@ uint32_t Test_Buffer_BasicFrame(void) {
 uint32_t Test_Frame_Packet(void) {
     #define testPacket(PAT, N)              PRINTF(#PAT " %dx\n", N);\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     Packet_init(&frame, PAT, sizeof(PAT));\
                                                     Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * Packet_len(&frame));\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * Packet_len(&frame));\
                                                 }\
                                                 Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     status = Codec_decodeFrame(&codec, &tempFrame, &istream);\
                                                     assert(Status, status, Codec_Status_Done);\
                                                     assert(Packet, &tempFrame, &frame);\
@@ -325,7 +325,7 @@ uint32_t Test_Buffer_Packet(void) {
     Codec_init(&codec, Packet_baseLayer());
     Packet_init(&tempFrame, tempBuff, sizeof(tempBuff));
 
-    index = 0;
+    assert_index = 0;
 
     testPacket(PAT1);
 
@@ -344,14 +344,14 @@ uint32_t Test_Frame_Noise_Packet(void) {
     #define addNoise(STREAM, N)             OStream_writePadding(STREAM, 0xFF, N)
     #define testPacket(PAT, N, S)           PRINTF(#PAT " %dx - Noise: %d\n", N, S);\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     Packet_init(&frame, PAT, sizeof(PAT));\
                                                     addNoise(&ostream, S);\
                                                     Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * (Packet_len(&frame) + S));\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * (Packet_len(&frame) + S));\
                                                 }\
                                                 Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     status = Codec_decodeFrame(&codec, &tempFrame, &istream);\
                                                     assert(Status, status, Codec_Status_Done);\
                                                     assert(Packet, &tempFrame, &frame);\
@@ -437,14 +437,14 @@ uint32_t Test_Frame_Sync_Packet(void) {
     #define addNoise(STREAM, N)             OStream_writePadding(STREAM, 0xFF, N)
     #define testPacket(PAT, N, S)           PRINTF(#PAT " %dx - Noise: %d\n", N, S);\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     Packet_init(&frame, PAT, sizeof(PAT));\
                                                     addNoise(&ostream, S);\
                                                     Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * (Packet_len(&frame) + S));\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * (Packet_len(&frame) + S));\
                                                 }\
                                                 Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     status = Codec_decodeFrame(&codec, &tempFrame, &istream);\
                                                     assert(Status, status, Codec_Status_Done);\
                                                     assert(Packet, &tempFrame, &frame);\
@@ -537,14 +537,14 @@ uint32_t Test_Frame_DuplicateHeader_Packet(void) {
 
     #define testPacket(PAT, N, S)           PRINTF(#PAT " %dx - Noise: %d\n", N, S);\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     Packet_init(&frame, PAT, sizeof(PAT));\
                                                     addNoise(&ostream, S);\
                                                     Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * (Packet_len(&frame) + S * 2));\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * (Packet_len(&frame) + S * 2));\
                                                 }\
                                                 Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     status = Codec_decodeFrame(&codec, &tempFrame, &istream);\
                                                     assert(Status, status, Codec_Status_Done);\
                                                     assert(Packet, &tempFrame, &frame);\
@@ -636,14 +636,14 @@ uint32_t Test_Frame_DuplicateHeader_Sync_Packet(void) {
 
     #define testPacket(PAT, N, S)           PRINTF(#PAT " %dx - Noise: %d\n", N, S);\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     Packet_init(&frame, PAT, sizeof(PAT));\
                                                     addNoise(&ostream, S);\
                                                     Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * (Packet_len(&frame) + S * 2));\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * (Packet_len(&frame) + S * 2));\
                                                 }\
                                                 Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     status = Codec_decodeFrame(&codec, &tempFrame, &istream);\
                                                     assert(Status, status, Codec_Status_Done);\
                                                     assert(Packet, &tempFrame, &frame);\
@@ -736,10 +736,10 @@ uint32_t Test_Async_Noise_Packet(void) {
                                         pFrame = &frame;\
                                         frameCount = 0;\
                                         for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                            for (index = 0; index < N; index++) {\
+                                            for (assert_index = 0; assert_index < N; assert_index++) {\
                                                 Packet_init(&frame, PAT, sizeof(PAT));\
                                                 Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                assert(Num, OStream_pendingBytes(&ostream), (index + 1) * Packet_len(&frame));\
+                                                assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * Packet_len(&frame));\
                                             }\
                                             Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
                                             line = __LINE__;\
@@ -835,10 +835,10 @@ uint32_t Test_Async_Sync_Packet(void) {
                                         Codec_beginDecode(&codec, &tempFrame);\
                                         pFrame = &frame;\
                                         for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                            for (index = 0; index < N; index++) {\
+                                            for (assert_index = 0; assert_index < N; assert_index++) {\
                                                 Packet_init(&frame, PAT, sizeof(PAT));\
                                                 Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                assert(Num, OStream_pendingBytes(&ostream), (index + 1) * Packet_len(&frame));\
+                                                assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * Packet_len(&frame));\
                                             }\
                                             Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
                                             line = __LINE__;\
@@ -939,14 +939,14 @@ uint32_t Test_Async_DuplicateHeader_Packet(void) {
     #define testPacket(PAT, N, S)           PRINTF(#PAT " %dx - Noise: %d\n", N, S);\
                                             Codec_beginDecode(&codec, &tempFrame);\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     Packet_init(&frame, PAT, sizeof(PAT));\
                                                     addNoise(&ostream, S);\
                                                     Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * (Packet_len(&frame) + S * 2));\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * (Packet_len(&frame) + S * 2));\
                                                 }\
                                                 Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     Codec_decode(&codec, &istream);\
                                                     assert(Packet, &tempFrame, &frame);\
                                                 }\
@@ -956,11 +956,11 @@ uint32_t Test_Async_DuplicateHeader_Packet(void) {
                                             Codec_beginDecode(&codec, &tempFrame);\
                                             pFrame = &frame;\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     Packet_init(&frame, PAT, sizeof(PAT));\
                                                     addNoise(&ostream, S);\
                                                     Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * (Packet_len(&frame) + S * 2));\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * (Packet_len(&frame) + S * 2));\
                                                 }\
                                                 Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
                                                 line = __LINE__;\
@@ -1070,14 +1070,14 @@ uint32_t Test_Async_DuplicateHeader_Sync_Packet(void) {
     #define testPacket(PAT, N, S)           PRINTF(#PAT " %dx - Noise: %d\n", N, S);\
                                             Codec_beginDecode(&codec, &tempFrame);\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     Packet_init(&frame, PAT, sizeof(PAT));\
                                                     addNoise(&ostream, S);\
                                                     Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * (Packet_len(&frame) + S * 2));\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * (Packet_len(&frame) + S * 2));\
                                                 }\
                                                 Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     Codec_decode(&codec, &istream);\
                                                     assert(Packet, &tempFrame, &frame);\
                                                 }\
@@ -1087,11 +1087,11 @@ uint32_t Test_Async_DuplicateHeader_Sync_Packet(void) {
                                             Codec_beginDecode(&codec, &tempFrame);\
                                             pFrame = &frame;\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     Packet_init(&frame, PAT, sizeof(PAT));\
                                                     addNoise(&ostream, S);\
                                                     Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * (Packet_len(&frame) + S * 2));\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * (Packet_len(&frame) + S * 2));\
                                                 }\
                                                 Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
                                                 line = __LINE__;\
@@ -1312,7 +1312,7 @@ uint32_t Test_Frame_Size(void) {
     Packet_init(&frame, NULL, 0);
 
     cycles = 0;
-    index = 0;
+    assert_index = 0;
 
     int LEN = 10;
 
@@ -1459,13 +1459,13 @@ Codec_LayerImpl* CFrame_baseLayer(void) {
 uint32_t Test_Frame_CFrame(void) {
     #define testCFrame(PAT, N)              PRINTF(#PAT " %dx\n", N);\
                                             for (cycles = 0; cycles < CYCLES_NUM; cycles++) {\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     CFrame_init(&frame, PAT, sizeof(PAT));\
                                                     Codec_encodeFrame(&codec, &frame, &ostream, Codec_EncodeMode_Normal);\
-                                                    assert(Num, OStream_pendingBytes(&ostream), (index + 1) * CFrame_len(&frame));\
+                                                    assert(Num, OStream_pendingBytes(&ostream), (assert_index + 1) * CFrame_len(&frame));\
                                                 }\
                                                 Stream_readStream(&ostream.Buffer, &istream.Buffer, OStream_pendingBytes(&ostream));\
-                                                for (index = 0; index < N; index++) {\
+                                                for (assert_index = 0; assert_index < N; assert_index++) {\
                                                     status = Codec_decodeFrame(&codec, &tempFrame, &istream);\
                                                     assert(Status, status, Codec_Status_Done);\
                                                     assert(CFrame, &tempFrame, &frame);\
@@ -1549,7 +1549,7 @@ uint32_t Test_Buffer_CFrame(void) {
     Codec_init(&codec, CFrame_baseLayer());
     CFrame_init(&tempFrame, tempBuff, sizeof(tempBuff));
 
-    index = 0;
+    assert_index = 0;
 
     testCFrame(PAT1);
     testCFrame(PAT2);
@@ -1562,12 +1562,12 @@ uint32_t Test_Buffer_CFrame(void) {
 
 // -------------------------- Assert Functions ------------------------
 void Codec_onDecodeBasicFrame(Codec* codec, Codec_Frame* frame) {
-    if ((errorCode = Assert_BasicFrame((BasicFrame*) pFrame, (BasicFrame*) frame, line, cycles, index)) == 0) {
+    if ((errorCode = Assert_BasicFrame((BasicFrame*) pFrame, (BasicFrame*) frame, line, cycles, assert_index)) == 0) {
         frameCount++;
     }
 }
 void Codec_onDecodePacket(Codec* codec, Codec_Frame* frame) {
-    if ((errorCode = Assert_Packet((Packet*) pFrame, (Packet*) frame, line, cycles, index)) == 0) {
+    if ((errorCode = Assert_Packet((Packet*) pFrame, (Packet*) frame, line, cycles, assert_index)) == 0) {
         frameCount++;
     }
 }
@@ -1588,21 +1588,21 @@ void printArray(uint8_t* arr, int len) {
     PRINTF("0x%02X", *arr);
     PUTS("}");
 }
-uint32_t Assert_Num(int a, int b, uint16_t line, uint8_t cycles, uint8_t index) {
+uint32_t Assert_Num(int a, int b, uint16_t line, uint8_t cycles, uint8_t assert_index) {
     if (a != b) {
         PRINTF("[Num] Expected: %d, Found: %d\n", b, a);
-        return compress(line, cycles, index);
+        return compress(line, cycles, assert_index);
     }
     return 0;
 }
-uint32_t Assert_Status(Codec_Status a, Codec_Status b, uint16_t line, uint8_t cycles, uint8_t index) {
+uint32_t Assert_Status(Codec_Status a, Codec_Status b, uint16_t line, uint8_t cycles, uint8_t assert_index) {
     if (a != b) {
         PRINTF("[Status] Expected: %d, Found: %d\n", b, a);
-        return compress(line, cycles, index);
+        return compress(line, cycles, assert_index);
     }
     return 0;
 }
-uint32_t Assert_Bytes(uint8_t* a, uint8_t* b, int len, uint16_t line, uint8_t cycles, uint8_t index) {
+uint32_t Assert_Bytes(uint8_t* a, uint8_t* b, int len, uint16_t line, uint8_t cycles, uint8_t assert_index) {
     if (memcmp(a, b, len) == 0) {
         PRINTF("[Bytes] Expected: ");
         printArray(b, len);
@@ -1610,11 +1610,11 @@ uint32_t Assert_Bytes(uint8_t* a, uint8_t* b, int len, uint16_t line, uint8_t cy
         printArray(a, len);
         PUTS("");
 
-        return compress(line, cycles, index);
+        return compress(line, cycles, assert_index);
     }
     return 0;
 }
-uint32_t Assert_BasicFrame(BasicFrame* a, BasicFrame* b, uint16_t line, uint8_t cycles, uint8_t index) {
+uint32_t Assert_BasicFrame(BasicFrame* a, BasicFrame* b, uint16_t line, uint8_t cycles, uint8_t assert_index) {
     if (!(a->Header.PacketSize == b->Header.PacketSize &&
         memcmp(a->Data.Data, b->Data.Data, a->Header.PacketSize) == 0)) {
         PRINTF("[BasicFrame] Expected Len: %d, Found Len: %d\n",
@@ -1625,11 +1625,11 @@ uint32_t Assert_BasicFrame(BasicFrame* a, BasicFrame* b, uint16_t line, uint8_t 
         printArray(a->Data.Data, a->Header.PacketSize);
         PUTS("");
 
-        return compress(line, cycles, index);
+        return compress(line, cycles, assert_index);
     }
     return 0;
 }
-uint32_t Assert_CFrame(CFrame* a, CFrame* b, uint16_t line, uint8_t cycles, uint8_t index) {
+uint32_t Assert_CFrame(CFrame* a, CFrame* b, uint16_t line, uint8_t cycles, uint8_t assert_index) {
     if (!(a->Header.PacketSize == b->Header.PacketSize &&
         memcmp(a->Data.Data, b->Data.Data, a->Header.PacketSize / CFRAME_DIV) == 0)) {
         PRINTF("[CFrame] Expected Len: %d, Found Len: %d\n",
@@ -1640,11 +1640,11 @@ uint32_t Assert_CFrame(CFrame* a, CFrame* b, uint16_t line, uint8_t cycles, uint
         printArray(a->Data.Data, a->Header.PacketSize);
         PUTS("");
 
-        return compress(line, cycles, index);
+        return compress(line, cycles, assert_index);
     }
     return 0;
 }
-uint32_t Assert_Packet(Packet* a, Packet* b, uint16_t line, uint8_t cycles, uint8_t index) {
+uint32_t Assert_Packet(Packet* a, Packet* b, uint16_t line, uint8_t cycles, uint8_t assert_index) {
     if (!(a->Len == b->Len &&
         memcmp(a->Data, b->Data, a->Len) == 0)) {
         PRINTF("[Packet] Expected Len: %d, Found Len: %d\n",
@@ -1655,7 +1655,7 @@ uint32_t Assert_Packet(Packet* a, Packet* b, uint16_t line, uint8_t cycles, uint
         printArray(a->Data, a->Len);
         PUTS("");
 
-        return compress(line, cycles, index);
+        return compress(line, cycles, assert_index);
     }
     return 0;
 }

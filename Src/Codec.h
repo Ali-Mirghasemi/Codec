@@ -44,7 +44,7 @@ extern "C" {
 /**
  * @brief This feature enable helper macros for codec library and need `Macro` library
  */
-#define CODEC_SUPPORT_MACRO                     1
+#define CODEC_SUPPORT_MACRO                     (1 || defined(CODEC_LIB_MACRO))
 
 /* Codec Encode Options */
 #if CODEC_ENCODE

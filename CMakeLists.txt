@@ -77,6 +77,55 @@ endif()
 
 math(EXPR LIB_COUNT "${BUILD_STATIC_LIB_NUM} + ${BUILD_SHARED_LIB_NUM}")
 
+if(LIB_COUNT EQUAL 0)
+    message(STATUS "No build type selected — defaulting to STATIC library")
+    set(${LIB_NAME_UPPER}_BUILD_STATIC_LIB ON)
+    set(BUILD_STATIC_LIB_NUM 1)
+    set(LIB_COUNT 1)
+endif()
+
+# ============================================================
+# === Dependency: Stream library (local or installed) ===
+# ============================================================
+set(STREAM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Stream" CACHE PATH "Path to Stream library")
+
+if(EXISTS "${STREAM_DIR}/CMakeLists.txt")
+    message(STATUS "Found local Stream source at: ${STREAM_DIR}")
+    add_subdirectory(${STREAM_DIR} ${CMAKE_BINARY_DIR}/Stream)
+elseif(NOT TARGET Stream::Shared AND NOT TARGET Stream::Static)
+    find_package(Stream CONFIG REQUIRED)
+endif()
+
+if(TARGET Stream::Shared)
+    set(STREAM_LIB Stream::Shared)
+elseif(TARGET Stream::Static)
+    set(STREAM_LIB Stream::Static)
+else()
+    message(FATAL_ERROR "No Stream library target found! Make sure Stream is available.")
+endif()
+
+# ============================================================
+# === Optional dependency: Macro (header-only) ===
+# ============================================================
+set(${LIB_NAME_UPPER}_LIB_MACRO FALSE)
+set(MACRO_LOCAL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../Macro")
+
+# Find installed Macro package
+find_package(Macro QUIET)
+
+if(TARGET Macro::HeaderOnly)
+    message(STATUS "Using installed Macro header-only library")
+    set(${LIB_NAME_UPPER}_LIB_MACRO TRUE)
+elseif(EXISTS "${MACRO_LOCAL_PATH}/CMakeLists.txt")
+    message(STATUS "Found local Macro source at: ${MACRO_LOCAL_PATH}")
+    add_subdirectory(${MACRO_LOCAL_PATH} ${CMAKE_BINARY_DIR}/Macro)
+    if(TARGET Macro::HeaderOnly)
+        set(${LIB_NAME_UPPER}_LIB_MACRO TRUE)
+    endif()
+else()
+    message(STATUS "No Macro library found — building without logging")
+endif()
+
 # --- Shared Library ---
 if (${LIB_NAME_UPPER}_BUILD_SHARED_LIB)
     if (LIB_COUNT EQUAL 1)
@@ -93,6 +142,7 @@ if (${LIB_NAME_UPPER}_BUILD_SHARED_LIB)
     )
     target_compile_definitions(${SHARED_TARGET} PRIVATE ${LIB_NAME_UPPER}_EXPORTS)
     target_compile_features(${SHARED_TARGET} PUBLIC c_std_99)
+    target_link_libraries(${SHARED_TARGET} PUBLIC ${STREAM_LIB})
     set_target_properties(${SHARED_TARGET} PROPERTIES
         PUBLIC_HEADER "${LIBRARY_HEADERS}"
     )
@@ -125,6 +175,7 @@ if (${LIB_NAME_UPPER}_BUILD_STATIC_LIB)
         $<INSTALL_INTERFACE:include>
     )
     target_compile_features(${STATIC_TARGET} PUBLIC c_std_99)
+    target_link_libraries(${STATIC_TARGET} PUBLIC ${STREAM_LIB})
     set_target_properties(${STATIC_TARGET} PROPERTIES
         PUBLIC_HEADER "${LIBRARY_HEADERS}"
     )
@@ -135,12 +186,47 @@ if (${LIB_NAME_UPPER}_BUILD_STATIC_LIB)
     )
 endif()
 
+# Link Macro to library targets if available
+if(${LIB_NAME_UPPER}_LIB_MACRO)
+    if(TARGET ${STATIC_TARGET})
+        target_link_libraries(${STATIC_TARGET} PRIVATE Macro::HeaderOnly)
+        target_compile_definitions(${STATIC_TARGET} PRIVATE ${LIB_NAME_UPPER}_LIB_MACRO)
+    endif()
+    if(TARGET ${SHARED_TARGET})
+        target_link_libraries(${SHARED_TARGET} PRIVATE Macro::HeaderOnly)
+        target_compile_definitions(${SHARED_TARGET} PRIVATE ${LIB_NAME_UPPER}_LIB_MACRO)
+    endif()
+endif()
+
+# === Optional dependency: Assert (non-header library) ===
+set(${LIB_NAME_UPPER}_LIB_ASSERT FALSE)
+set(ASSERT_LOCAL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../Assert")
+
+# Try to find installed package first
+find_package(Assert QUIET)
+
+if(TARGET Assert::Shared OR TARGET Assert::Static)
+    message(STATUS "Using installed Assert library")
+    set(${LIB_NAME_UPPER}_LIB_ASSERT TRUE)
+# Else, try local source
+elseif(EXISTS "${ASSERT_LOCAL_PATH}/CMakeLists.txt")
+    message(STATUS "Found local Assert source at: ${ASSERT_LOCAL_PATH}")
+    add_subdirectory(${ASSERT_LOCAL_PATH} ${CMAKE_BINARY_DIR}/Assert)
+    if(TARGET Assert::Shared OR TARGET Assert::Static)
+        set(${LIB_NAME_UPPER}_LIB_ASSERT TRUE)
+    endif()
+else()
+    message(STATUS "No Assert library found — examples will build without Assert")
+endif()
+
 # === Examples ===
 if (${LIB_NAME_UPPER}_BUILD_EXAMPLES)
     file(MAKE_DIRECTORY ${EXAMPLES_OUTPUT_DIR})
 
     set(EXAMPLE_NAMES
         ${LIB_NAME}-Test
+        BasicFrame
+        Simple
     )
 
     foreach(EXAMPLE_NAME ${EXAMPLE_NAMES})
@@ -155,6 +241,23 @@ if (${LIB_NAME_UPPER}_BUILD_EXAMPLES)
                 target_link_libraries(${EXAMPLE_NAME} PRIVATE ${STATIC_TARGET})
             elseif (${LIB_NAME_UPPER}_BUILD_SHARED_LIB)
                 target_link_libraries(${EXAMPLE_NAME} PRIVATE ${SHARED_TARGET})
+            endif()
+
+            target_link_libraries(${EXAMPLE_NAME} PRIVATE ${STREAM_LIB})
+
+            if(${LIB_NAME_UPPER}_LIB_MACRO)
+                target_link_libraries(${EXAMPLE_NAME} PRIVATE Macro::HeaderOnly)
+                target_compile_definitions(${EXAMPLE_NAME} PRIVATE ${LIB_NAME_UPPER}_LIB_MACRO)
+            endif()
+
+            # Optionally link Assert
+            if(${LIB_NAME_UPPER}_LIB_ASSERT)
+                if(TARGET Assert::Shared)
+                    target_link_libraries(${EXAMPLE_NAME} PRIVATE Assert::Shared)
+                elseif(TARGET Assert::Static)
+                    target_link_libraries(${EXAMPLE_NAME} PRIVATE Assert::Static)
+                endif()
+                target_compile_definitions(${EXAMPLE_NAME} PRIVATE ${LIB_NAME_UPPER}_LIB_ASSERT)
             endif()
 
             # Copy shared library to examples output directory
