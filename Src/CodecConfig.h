@@ -13,6 +13,15 @@
 
 #include <stdint.h>
 
+/* Check User Config file exists to include it or not */
+#ifndef __has_include
+    #define __has_include(X)    0
+#endif
+
+#if defined(CODEC_USER_CONFIG) || __has_include("CodecUserConfig.h")
+    #include "CodecUserConfig.h"
+#endif
+
 /************************************************************************/
 /*                            Configuration                             */
 /************************************************************************/
