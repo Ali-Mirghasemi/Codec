@@ -17,122 +17,16 @@ extern "C" {
 #endif
 
 #define CODEC_VER_MAJOR    0
-#define CODEC_VER_MINOR    5
+#define CODEC_VER_MINOR    6
 #define CODEC_VER_FIX      0
 
-#include <stdint.h>
+#include "CodecConfig.h"
 
-/************************************************************************/
-/*                            Configuration                             */
-/************************************************************************/
-/**
- * @brief enable user arguments into codec
- */
-#define CODEC_ARGS                              1
-/**
- * @brief enable encode feature
- */
-#define CODEC_ENCODE                            1
-/**
- * @brief enable decode feature
- */
-#define CODEC_DECODE                            1
-/**
- * @brief enable next layer null feature, this feature allow you to set null as last layer function
- */
-#define CODEC_SUPPORT_NEXT_LAYER_NULL           1
-/**
- * @brief This feature enable helper macros for codec library and need `Macro` library
- */
-#define CODEC_SUPPORT_MACRO                     (1 || defined(CODEC_LIB_MACRO))
-
-/* Codec Encode Options */
-#if CODEC_ENCODE
-    /**
-     * @brief enable encode on raw buffer
-     */
-    #define CODEC_ENCODE_ON_BUFFER              1
-    /**
-     * @brief enable encode async feature,
-     * this feature allow you to encode on stream with smaller buffer size
-     */
-    #define CODEC_ENCODE_ASYNC                  1
-    /**
-     * @brief enable queue for encode async feature, !*this feature is not working yet*!
-     */
-    #define CODEC_ENCODE_QUEUE                  1
-    /**
-     * @brief enable callback feature for when encode completed
-     */
-    #define CODEC_ENCODE_CALLBACK               1
-    /**
-     * @brief enable encode error callback
-     */
-    #define CODEC_ENCODE_ERROR                  1
-    /**
-     * @brief enable encode padding for keep layer size fixed
-     */
-    #define CODEC_ENCODE_PADDING                1
-    /* Encode Padding Options */
-    #if CODEC_ENCODE_PADDING
-        #define CODEC_ENCODE_PADDING_IGNORE     -1
-        #define CODEC_ENCODE_PADDING_VALUE      0x00
-
-        #define CODEC_ENCODE_PADDING_MODE       CODEC_LAYER_PADDING_IGNORE
-    #endif // CODEC_ENCODE_PADDING
-#endif // CODEC_ENCODE
-
-/* Codec Decode Options */
-#if CODEC_DECODE
-    /**
-     * @brief enable encode on raw buffer
-     */
-    #define CODEC_DECODE_ON_BUFFER              1
-    /**
-     * @brief enable decode async feature,
-     * this feature allow you to encode on stream with smaller buffer size
-     */
-    #define CODEC_DECODE_ASYNC                  1
-    /**
-     * @brief enable queue for decode async feature, !*this feature is not working yet*!
-     */
-    #define CODEC_DECODE_QUEUE                  1
-    /**
-     * @brief enable sync options for decode
-     */
-    #define CODEC_DECODE_SYNC                   1
-    /**
-     * @brief enable callback feature for when decode completed
-     */
-    #define CODEC_DECODE_CALLBACK               1
-    /**
-     * @brief enable decode error callback
-     */
-    #define CODEC_DECODE_ERROR                  1
-    /**
-     * @brief enable decode padding for keep layer size fixed
-     */
-    #define CODEC_DECODE_PADDING                1
-#endif // CODEC_DECODE
-/**
- * @brief choose what type use for codec frame, default is void
- */
-typedef void Codec_Frame;
-/**
- * @brief choose what type use for codec error
- */
-typedef uint32_t Codec_Error;
-/**
- * @brief choose what type use for codec layer index
- */
-typedef uint16_t Codec_LayerIndex;
-
-/************************************************************************/
 #if CODEC_ENCODE
     #include "OutputStream.h"
 
 #if !STREAM_WRITE_LOCK
-    #error "Codec Library use OSTREAM_LOCK, you must enable it"
+    #error "Codec Library use STREAM_WRITE_LOCK, you must enable it"
 #endif
 #endif // CODEC_ENCODE
 
@@ -140,7 +34,7 @@ typedef uint16_t Codec_LayerIndex;
     #include "InputStream.h"
 
 #if !STREAM_READ_LOCK
-    #error "Codec Library use ISTREAM_LOCK, you must enable it"
+    #error "Codec Library use STREAM_READ_LOCK, you must enable it"
 #endif
 #endif // CODEC_DECODE
 
