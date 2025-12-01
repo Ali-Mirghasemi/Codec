@@ -77,7 +77,7 @@ void Packet_init(Packet* frame, uint8_t* data, uint32_t size);
 uint32_t Packet_len(Packet* frame);
 Codec_LayerImpl* Packet_baseLayer(void);
 
-Stream_LenType Packet_sync(Codec* codec, IStream* stream);
+Stream_LenType Packet_sync(Codec* codec, StreamIn* stream);
 
 #ifdef __cplusplus
 };

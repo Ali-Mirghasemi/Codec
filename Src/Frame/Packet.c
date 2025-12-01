@@ -15,15 +15,15 @@ static const uint16_t   __PACKET_SECOND_SIGN    = PACKET_SECOND_SIGN;
 static const uint32_t   __PACKET_FOOTER_SIGN    = PACKET_FOOTER_SIGN;
 
 #if CODEC_DECODE
-static Codec_Error      Packet_Header_parse(Codec* codec, Codec_Frame* frame, IStream* stream);
-static Codec_Error      Packet_Data_parse(Codec* codec, Codec_Frame* frame, IStream* stream);
-static Codec_Error      Packet_Footer_parse(Codec* codec, Codec_Frame* frame, IStream* stream);
+static Codec_Error      Packet_Header_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream);
+static Codec_Error      Packet_Data_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream);
+static Codec_Error      Packet_Footer_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream);
 #endif // CODEC_DECODE
 
 #if CODEC_ENCODE
-static Codec_Error      Packet_Header_write(Codec* codec, Codec_Frame* frame, OStream* stream);
-static Codec_Error      Packet_Data_write(Codec* codec, Codec_Frame* frame, OStream* stream);
-static Codec_Error      Packet_Footer_write(Codec* codec, Codec_Frame* frame, OStream* stream);
+static Codec_Error      Packet_Header_write(Codec* codec, Codec_Frame* frame, StreamOut* stream);
+static Codec_Error      Packet_Data_write(Codec* codec, Codec_Frame* frame, StreamOut* stream);
+static Codec_Error      Packet_Footer_write(Codec* codec, Codec_Frame* frame, StreamOut* stream);
 #endif // CODEC_ENCODE
 
 static Stream_LenType   Packet_Header_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
@@ -80,14 +80,14 @@ Codec_LayerImpl* Packet_baseLayer(void) {
     return (Codec_LayerImpl*) &PACKET_HEADER_IMPL;
 }
 
-Stream_LenType Packet_sync(Codec* codec, IStream* stream) {
+Stream_LenType Packet_sync(Codec* codec, StreamIn* stream) {
     __setByteOrder(stream);
     return IStream_findUInt16(stream, __PACKET_FIRST_SIGN);
 }
 
 #if CODEC_DECODE
 
-static Codec_Error Packet_Header_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
+static Codec_Error Packet_Header_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     Packet* p = (Packet*) frame;
     __setByteOrder(stream);
     if (IStream_readUInt16(stream) != __PACKET_FIRST_SIGN) {
@@ -102,7 +102,7 @@ static Codec_Error Packet_Header_parse(Codec* codec, Codec_Frame* frame, IStream
     }
     return CODEC_OK;
 }
-static Codec_Error Packet_Data_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
+static Codec_Error Packet_Data_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     Packet* p = (Packet*) frame;
     if (IStream_available(stream) < (Stream_LenType) p->Len) {
         return (Codec_Error) Packet_Error_Data;
@@ -113,7 +113,7 @@ static Codec_Error Packet_Data_parse(Codec* codec, Codec_Frame* frame, IStream* 
     IStream_readBytes(stream, p->Data, p->Len);
     return CODEC_OK;
 }
-static Codec_Error Packet_Footer_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
+static Codec_Error Packet_Footer_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     __setByteOrder(stream);
     if (IStream_readUInt32(stream) != __PACKET_FOOTER_SIGN) {
         return (Codec_Error) Packet_Error_FooterSign;
@@ -124,7 +124,7 @@ static Codec_Error Packet_Footer_parse(Codec* codec, Codec_Frame* frame, IStream
 
 #if CODEC_ENCODE
 
-static Codec_Error Packet_Header_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
+static Codec_Error Packet_Header_write(Codec* codec, Codec_Frame* frame, StreamOut* stream) {
     Packet* p = (Packet*) frame;
     __setByteOrder(stream);
     OStream_writeUInt16(stream, __PACKET_FIRST_SIGN);
@@ -132,7 +132,7 @@ static Codec_Error Packet_Header_write(Codec* codec, Codec_Frame* frame, OStream
     OStream_writeUInt16(stream, __PACKET_SECOND_SIGN);
     return CODEC_OK;
 }
-static Codec_Error Packet_Data_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
+static Codec_Error Packet_Data_write(Codec* codec, Codec_Frame* frame, StreamOut* stream) {
     Packet* p = (Packet*) frame;
     if (p->Data == NULL) {
         return (Codec_Error) Packet_Error_DataPtr;
@@ -140,7 +140,7 @@ static Codec_Error Packet_Data_write(Codec* codec, Codec_Frame* frame, OStream* 
     OStream_writeBytes(stream, p->Data, p->Len);
     return CODEC_OK;
 }
-static Codec_Error Packet_Footer_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
+static Codec_Error Packet_Footer_write(Codec* codec, Codec_Frame* frame, StreamOut* stream) {
     __setByteOrder(stream);
     OStream_writeUInt32(stream, __PACKET_FOOTER_SIGN);
     return CODEC_OK;

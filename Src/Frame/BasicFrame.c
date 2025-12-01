@@ -1,13 +1,13 @@
 #include "BasicFrame.h"
 
 #if CODEC_DECODE
-static Codec_Error      BasicFrame_Header_parse(Codec* codec, Codec_Frame* frame, IStream* stream);
-static Codec_Error      BasicFrame_Data_parse(Codec* codec, Codec_Frame* frame, IStream* stream);
+static Codec_Error      BasicFrame_Header_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream);
+static Codec_Error      BasicFrame_Data_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream);
 #endif // CODEC_DECODE
 
 #if CODEC_ENCODE
-static Codec_Error      BasicFrame_Header_write(Codec* codec, Codec_Frame* frame, OStream* stream);
-static Codec_Error      BasicFrame_Data_write(Codec* codec, Codec_Frame* frame, OStream* stream);
+static Codec_Error      BasicFrame_Header_write(Codec* codec, Codec_Frame* frame, StreamOut* stream);
+static Codec_Error      BasicFrame_Data_write(Codec* codec, Codec_Frame* frame, StreamOut* stream);
 #endif // CODEC_ENCODE
 
 static Stream_LenType   BasicFrame_Header_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
@@ -74,7 +74,7 @@ uint32_t BasicFrame_len(BasicFrame* frame) {
  * @param stream
  * @return Codec_Error
  */
-Codec_Error BasicFrame_Header_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
+Codec_Error BasicFrame_Header_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     ((BasicFrame*) frame)->Header.PacketSize = IStream_readUInt32(stream);
     return CODEC_OK;
 }
@@ -86,7 +86,7 @@ Codec_Error BasicFrame_Header_parse(Codec* codec, Codec_Frame* frame, IStream* s
  * @param stream
  * @return Codec_Error
  */
-Codec_Error BasicFrame_Data_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
+Codec_Error BasicFrame_Data_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     BasicFrame* bFrame = (BasicFrame*) frame;
     IStream_readBytes(stream, bFrame->Data.Data, bFrame->Header.PacketSize);
     return CODEC_OK;
@@ -101,7 +101,7 @@ Codec_Error BasicFrame_Data_parse(Codec* codec, Codec_Frame* frame, IStream* str
  * @param stream
  * @return Codec_Error
  */
-Codec_Error BasicFrame_Header_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
+Codec_Error BasicFrame_Header_write(Codec* codec, Codec_Frame* frame, StreamOut* stream) {
     OStream_writeUInt32(stream, ((BasicFrame*) frame)->Header.PacketSize);
     return CODEC_OK;
 }
@@ -113,7 +113,7 @@ Codec_Error BasicFrame_Header_write(Codec* codec, Codec_Frame* frame, OStream* s
  * @param stream
  * @return Codec_Error
  */
-Codec_Error BasicFrame_Data_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
+Codec_Error BasicFrame_Data_write(Codec* codec, Codec_Frame* frame, StreamOut* stream) {
     BasicFrame* bFrame = (BasicFrame*) frame;
     OStream_writeBytes(stream, bFrame->Data.Data, bFrame->Header.PacketSize);
     return CODEC_OK;

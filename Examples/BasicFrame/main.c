@@ -20,8 +20,8 @@ int main()
     uint8_t temp[5] = {0x1A, 0x2B, 0x3C, 0x4D, 0x5E};
 
     Codec codec;
-    IStream in;
-    OStream out;
+    StreamIn in;
+    StreamOut out;
 
     // init decode frame
     BasicFrame_init(&frame, frameBuff, sizeof(frameBuff));

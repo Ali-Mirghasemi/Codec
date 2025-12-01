@@ -150,8 +150,8 @@ uint32_t Test_Frame_BasicFrame(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     BasicFrame frame;
     BasicFrame tempFrame;
@@ -257,8 +257,8 @@ uint32_t Test_Frame_Packet(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     Packet frame;
     Packet tempFrame;
@@ -365,8 +365,8 @@ uint32_t Test_Frame_Noise_Packet(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     Packet frame;
     Packet tempFrame;
@@ -458,8 +458,8 @@ uint32_t Test_Frame_Sync_Packet(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     Packet frame;
     Packet tempFrame;
@@ -558,8 +558,8 @@ uint32_t Test_Frame_DuplicateHeader_Packet(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     Packet frame;
     Packet tempFrame;
@@ -657,8 +657,8 @@ uint32_t Test_Frame_DuplicateHeader_Sync_Packet(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     Packet frame;
     Packet tempFrame;
@@ -756,8 +756,8 @@ uint32_t Test_Async_Noise_Packet(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     Packet frame;
     Packet tempFrame;
@@ -855,8 +855,8 @@ uint32_t Test_Async_Sync_Packet(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     Packet frame;
     Packet tempFrame;
@@ -980,8 +980,8 @@ uint32_t Test_Async_DuplicateHeader_Packet(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     Packet frame;
     Packet tempFrame;
@@ -1111,8 +1111,8 @@ uint32_t Test_Async_DuplicateHeader_Sync_Packet(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     Packet frame;
     Packet tempFrame;
@@ -1217,8 +1217,8 @@ uint32_t Test_Async_Part(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     Packet frame;
     Packet tempFrame;
@@ -1338,15 +1338,15 @@ uint32_t Test_Frame_Size(void) {
 // ------------------------- Custom Frame --------------------------
 
 #if CODEC_DECODE
-static Codec_Error      CFrame_Header_parse(Codec* codec, Codec_Frame* frame, IStream* stream);
-static Codec_Error      CFrame_Data_parse(Codec* codec, Codec_Frame* frame, IStream* stream);
-static Codec_Error      CFrame_Footer_parse(Codec* codec, Codec_Frame* frame, IStream* stream);
+static Codec_Error      CFrame_Header_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream);
+static Codec_Error      CFrame_Data_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream);
+static Codec_Error      CFrame_Footer_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream);
 #endif // CODEC_DECODE
 
 #if CODEC_ENCODE
-static Codec_Error      CFrame_Header_write(Codec* codec, Codec_Frame* frame, OStream* stream);
-static Codec_Error      CFrame_Data_write(Codec* codec, Codec_Frame* frame, OStream* stream);
-static Codec_Error      CFrame_Footer_write(Codec* codec, Codec_Frame* frame, OStream* stream);
+static Codec_Error      CFrame_Header_write(Codec* codec, Codec_Frame* frame, StreamOut* stream);
+static Codec_Error      CFrame_Data_write(Codec* codec, Codec_Frame* frame, StreamOut* stream);
+static Codec_Error      CFrame_Footer_write(Codec* codec, Codec_Frame* frame, StreamOut* stream);
 #endif // CODEC_ENCODE
 
 static Stream_LenType   CFrame_Header_getLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
@@ -1392,31 +1392,31 @@ static const Codec_LayerImpl CFRAME_FOOTER_IMPL = {
 };
 
 #if CODEC_DECODE
-static Codec_Error      CFrame_Header_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
+static Codec_Error      CFrame_Header_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     ((CFrame*) frame)->Header.PacketSize = IStream_readUInt32(stream);
     return CODEC_OK;
 }
-static Codec_Error      CFrame_Data_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
+static Codec_Error      CFrame_Data_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     CFrame* cFrame = (CFrame*) frame;
     IStream_readBytes(stream, cFrame->Data.Data, cFrame->Header.PacketSize / CFRAME_READ_DIV);
     return CODEC_OK;
 }
-static Codec_Error      CFrame_Footer_parse(Codec* codec, Codec_Frame* frame, IStream* stream) {
+static Codec_Error      CFrame_Footer_parse(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     return IStream_readUInt32(stream) != 0xABCD1234;
 }
 #endif // CODEC_DECODE
 
 #if CODEC_ENCODE
-static Codec_Error      CFrame_Header_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
+static Codec_Error      CFrame_Header_write(Codec* codec, Codec_Frame* frame, StreamOut* stream) {
     OStream_writeUInt32(stream, ((CFrame*) frame)->Header.PacketSize);
     return CODEC_OK;
 }
-static Codec_Error      CFrame_Data_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
+static Codec_Error      CFrame_Data_write(Codec* codec, Codec_Frame* frame, StreamOut* stream) {
     CFrame* cFrame = (CFrame*) frame;
     OStream_writeBytes(stream, cFrame->Data.Data, cFrame->Header.PacketSize / CFRAME_WRITE_DIV);
     return CODEC_OK;
 }
-static Codec_Error      CFrame_Footer_write(Codec* codec, Codec_Frame* frame, OStream* stream) {
+static Codec_Error      CFrame_Footer_write(Codec* codec, Codec_Frame* frame, StreamOut* stream) {
     OStream_writeUInt32(stream, 0xABCD1234);
     return CODEC_OK;
 }
@@ -1480,8 +1480,8 @@ uint32_t Test_Frame_CFrame(void) {
     static uint8_t PAT5[6] = {0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
     Codec_Status status;
-    OStream ostream;
-    IStream istream;
+    StreamOut ostream;
+    StreamIn istream;
     Codec codec;
     CFrame frame;
     CFrame tempFrame;

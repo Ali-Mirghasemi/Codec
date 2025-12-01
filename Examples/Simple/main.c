@@ -20,18 +20,18 @@ typedef struct {
 } Frame;
 
 // Header Impl functions
-Codec_Error Frame_parseHeader(Codec* codec, Codec_Frame* frame, IStream* stream);
-Codec_Error Frame_writeHeader(Codec* codec, Codec_Frame* frame, OStream* stream);
+Codec_Error Frame_parseHeader(Codec* codec, Codec_Frame* frame, StreamIn* stream);
+Codec_Error Frame_writeHeader(Codec* codec, Codec_Frame* frame, StreamOut* stream);
 Stream_LenType Frame_getHeaderLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 Codec_LayerImpl* Frame_getHeaderNextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 // Data Impl functions
-Codec_Error Frame_parseData(Codec* codec, Codec_Frame* frame, IStream* stream);
-Codec_Error Frame_writeData(Codec* codec, Codec_Frame* frame, OStream* stream);
+Codec_Error Frame_parseData(Codec* codec, Codec_Frame* frame, StreamIn* stream);
+Codec_Error Frame_writeData(Codec* codec, Codec_Frame* frame, StreamOut* stream);
 Stream_LenType Frame_getDataSize(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 Codec_LayerImpl* Frame_getDataNextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 // Footer Impl functions
-Codec_Error Frame_parseFooter(Codec* codec, Codec_Frame* frame, IStream* stream);
-Codec_Error Frame_writeFooter(Codec* codec, Codec_Frame* frame, OStream* stream);
+Codec_Error Frame_parseFooter(Codec* codec, Codec_Frame* frame, StreamIn* stream);
+Codec_Error Frame_writeFooter(Codec* codec, Codec_Frame* frame, StreamOut* stream);
 Stream_LenType Frame_getFooterLen(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 Codec_LayerImpl* Frame_getFooterNextLayer(Codec* codec, Codec_Frame* frame, Codec_Phase phase);
 
@@ -69,8 +69,8 @@ int main() {
     Frame mFrame;
     uint8_t inBuff[40] = {0};
     uint8_t outBuff[40] = {0};
-    OStream out;
-    IStream in;
+    StreamOut out;
+    StreamIn in;
     Codec codec;
     Codec_init(&codec, (Codec_LayerImpl*) &FRAME_LAYER_HEADER);
     Codec_onDecode(&codec, Frame_onDetect);
@@ -107,7 +107,7 @@ void Frame_onError(Codec* codec, Codec_Frame* frame, Codec_LayerImpl* layer, Cod
 }
 
 /************************************** Header Impl *************************************************/
-Codec_Error Frame_parseHeader(Codec* codec, Codec_Frame* frame, IStream* stream) {
+Codec_Error Frame_parseHeader(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     Frame* myFrame = (Frame*) frame;
     IStream_setByteOrder(stream, ByteOrder_BigEndian);
 
@@ -121,7 +121,7 @@ Codec_Error Frame_parseHeader(Codec* codec, Codec_Frame* frame, IStream* stream)
 
     return CODEC_OK;
 }
-Codec_Error Frame_writeHeader(Codec* codec, Codec_Frame* frame, OStream* stream) {
+Codec_Error Frame_writeHeader(Codec* codec, Codec_Frame* frame, StreamOut* stream) {
     Frame* myFrame = (Frame*) frame;
     OStream_setByteOrder(stream, ByteOrder_BigEndian);
 
@@ -138,7 +138,7 @@ Codec_LayerImpl* Frame_getHeaderNextLayer(Codec* codec, Codec_Frame* frame, Code
     return (Codec_LayerImpl*) &FRAME_LAYER_DATA;
 }
 /************************************** Data Impl *************************************************/
-Codec_Error Frame_parseData(Codec* codec, Codec_Frame* frame, IStream* stream) {
+Codec_Error Frame_parseData(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     Frame* myFrame = (Frame*) frame;
     IStream_setByteOrder(stream, ByteOrder_BigEndian);
 
@@ -146,7 +146,7 @@ Codec_Error Frame_parseData(Codec* codec, Codec_Frame* frame, IStream* stream) {
 
     return CODEC_OK;
 }
-Codec_Error Frame_writeData(Codec* codec, Codec_Frame* frame, OStream* stream) {
+Codec_Error Frame_writeData(Codec* codec, Codec_Frame* frame, StreamOut* stream) {
     Frame* myFrame = (Frame*) frame;
     OStream_setByteOrder(stream, ByteOrder_BigEndian);
 
@@ -161,11 +161,11 @@ Codec_LayerImpl* Frame_getDataNextLayer(Codec* codec, Codec_Frame* frame, Codec_
     return (Codec_LayerImpl*) &FRAME_LAYER_FOOTER;
 }
 /************************************** Footer Impl *************************************************/
-Codec_Error Frame_parseFooter(Codec* codec, Codec_Frame* frame, IStream* stream) {
+Codec_Error Frame_parseFooter(Codec* codec, Codec_Frame* frame, StreamIn* stream) {
     IStream_setByteOrder(stream, ByteOrder_BigEndian);
     return IStream_readUInt32(stream) != 0xAA55CC33;
 }
-Codec_Error Frame_writeFooter(Codec* codec, Codec_Frame* frame, OStream* stream) {
+Codec_Error Frame_writeFooter(Codec* codec, Codec_Frame* frame, StreamOut* stream) {
     OStream_setByteOrder(stream, ByteOrder_BigEndian);
     OStream_writeUInt32(stream, 0xAA55CC33);
 
