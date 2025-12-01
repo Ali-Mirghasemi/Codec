@@ -22,6 +22,10 @@
     #include "CodecUserConfig.h"
 #endif
 
+#ifndef CODEC_LIB_MACRO
+    #define CODEC_LIB_MACRO     0
+#endif
+
 /************************************************************************/
 /*                            Configuration                             */
 /************************************************************************/
@@ -53,7 +57,7 @@
  * @brief This feature enable helper macros for codec library and need `Macro` library
  */
 #ifndef CODEC_SUPPORT_MACRO
-    #define CODEC_SUPPORT_MACRO                     (1 || defined(CODEC_LIB_MACRO))
+    #define CODEC_SUPPORT_MACRO                     (1 || CODEC_LIB_MACRO)
 #endif
 
 /* Codec Encode Options */

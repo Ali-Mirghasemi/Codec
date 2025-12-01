@@ -30,7 +30,7 @@
 /**
  * @brief This feature enable helper macros for codec library and need `Macro` library
  */
-//#define CODEC_SUPPORT_MACRO                     (1 || defined(CODEC_LIB_MACRO))
+//#define CODEC_SUPPORT_MACRO                     1
 
 /* Codec Encode Options */
 /**
